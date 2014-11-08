@@ -1,0 +1,11 @@
+language: haskell
+
+ghc:
+  - 7.8
+  - 7.6
+
+install:
+  - cabal sdist && cabal install --enable-tests dist/envparse-*.tar.gz
+
+script:
+  - true
