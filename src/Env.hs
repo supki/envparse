@@ -6,18 +6,21 @@
 -- @
 -- module Main (main) where
 --
+-- import Control.Monad
 -- import Env
 --
--- newtype Hello = Hello { name :: String }
+-- data Hello = Hello { name :: String, quiet :: Bool }
 --
 -- hello :: IO Hello
 -- hello = 'Env.parse' ('header' "envparse example") $
 --   Hello \<$\> 'var' ('str' <=< 'nonempty') \"NAME\" ('help' \"Target for the greeting\")
+--         \<*\> 'switch' \"QUIET\"                ('help' \"Whether to actually print the greeting\")
 --
 -- main :: IO ()
 -- main = do
---   Hello { name } <- hello
---   putStrLn (\"Hello, \" ++ name ++ \"!\")
+--   Hello { name, quiet } <- hello
+--   unless quiet $
+--     putStrLn (\"Hello, \" ++ name ++ \"!\")
 -- @
 module Env
   ( parse
@@ -33,7 +36,11 @@ module Env
   , str
   , nonempty
   , auto
+  , Flag
+  , flag
+  , switch
   , def
+  , HasHelp
   , helpDef
   , help
   -- * Re-exports
@@ -123,6 +130,28 @@ var r n (Mod f) = Parser . liftAlt $ VarF
  where
   Var { varHelp, varDef, varHelpDef } = f defaultVar
 
+-- | A flag that takes the active value if the environment variable
+-- is set and non-empty and the default value otherwise
+--
+-- /Note:/ this parser never fails.
+flag
+  :: a -- ^ default value
+  -> a -- ^ active value
+  -> String -> Mod Flag a -> Parser a
+flag f t n (Mod g) = Parser . liftAlt $ VarF
+  { varfName    = n
+  , varfReader  = Just . maybe f (const t) . nonempty
+  , varfHelp    = flagHelp
+  , varfDef     = Just f
+  , varfHelpDef = Nothing
+  }
+ where
+  Flag { flagHelp } = g defaultFlag
+
+-- | A simple boolean 'flag'
+switch :: String -> Mod Flag Bool -> Parser Bool
+switch = flag False True
+
 -- | The trivial reader
 str :: IsString s => Reader s
 str = Just . fromString
@@ -190,19 +219,38 @@ defaultVar = Var
   , varHelpDef = Nothing
   }
 
--- | Attach a help text to the variable
-help :: String -> Mod Var a
-help h = Mod (\v -> v { varHelp = Just h })
-
 -- | The default value of the variable
 --
 -- /Note:/ specifying the default value means the parser won't ever fail.
 def :: a -> Mod Var a
 def d = Mod (\v -> v { varDef = Just d })
 
+-- | Flag metadata
+data Flag a = Flag
+  { flagHelp    :: Maybe String
+  }
+
+defaultFlag :: Flag a
+defaultFlag = Flag { flagHelp = Nothing }
+
 -- | Show the default value of the variable in the help text
 helpDef :: (a -> String) -> Mod Var a
 helpDef d = Mod (\v -> v { varHelpDef = Just d })
+
+
+-- | A class of things that can have a help message attached to them
+class HasHelp t where
+  setHelp :: String -> t a -> t a
+
+instance HasHelp Var where
+  setHelp h v = v { varHelp = Just h }
+
+instance HasHelp Flag where
+  setHelp h v = v { flagHelp = Just h }
+
+-- | Attach a help text
+help :: HasHelp t => String -> Mod t a
+help = Mod . setHelp
 
 
 helpDoc :: Mod Info a -> Parser a -> String
@@ -221,13 +269,17 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
   case varfHelp of
     Nothing -> [varfName]
     Just h
-      | k > 15    -> indent 2 varfName : map (indent 25) (splitEvery 30 t)
+      | k > 15    -> indent 2 varfName : map (indent 25 . stripl) (splitEvery 30 t)
       | otherwise ->
-          case zipWith indent (25 - k : repeat 30) (splitEvery 30 t) of
+          case zipWith indent (23 - k : repeat 25) (map stripl (splitEvery 30 t)) of
             (x : xs) -> (indent 2 varfName ++ x) : xs
             []       -> [indent 2 varfName]
      where k = length varfName
            t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
+
+stripl :: String -> String
+stripl (' ' : xs) = stripl xs
+stripl xs = xs
 
 splitEvery :: Int -> String -> [String]
 splitEvery _ "" = []

@@ -13,7 +13,7 @@ default (Integer, Double, String)
 
 spec :: Spec
 spec =
-  describe "fromEnv" $ do
+  describe "parsing" $ do
     it "parsing the environment with the noop parser always fails" $
       p empty `shouldBe` Nothing
 
@@ -27,32 +27,45 @@ spec =
       let x = (,) <$> var str "foo" mempty <*> var str "qux" mempty
       p x `shouldBe` Just ("bar", "quux")
 
-    it "can use a reader to parse the env var value" $
-      p (var auto "num" mempty) `shouldBe` Just 4
+    it "looking for the existing env var selects the active flag value" $
+      p (flag 4 7 "foo" mempty) `shouldBe` Just 7
 
-    it "can use a custom reader" $ do
-      p (var greaterThan5 "num"  mempty) `shouldBe` Nothing
-      p (var greaterThan5 "num2" mempty) `shouldBe` Just 7
+    it "looking for the existing but empty env var selects the default flag value" $
+      p (flag 4 7 "empty" mempty) `shouldBe` Just 4
 
-    it "can look through a list of alternatives" $
-      p (asum
-        [ var (\_ -> pure 1) "nope"       mempty
-        , var (\_ -> pure 2) "still-nope" mempty
-        , var (\_ -> pure 3) "yep"        mempty
-        ]) `shouldBe` Just 3
+    it "looking for the non-existing env var selects the default flag value" $
+      p (flag 4 7 "xyzzy" mempty) `shouldBe` Just 4
 
-    it "variables can have default values" $
-      p (asum
-        [ var (\_ -> pure 1) "nope"       mempty
-        , var (\_ -> pure 2) "still-nope" (def 4)
-        , var (\_ -> pure 3) "yep"        mempty
-        ]) `shouldBe` Just 4
+    context "readers" $ do
+      it "can use a reader to parse the env var value" $
+        p (var auto "num" mempty) `shouldBe` Just 4
 
-    it "the latter modifier overwrites the former" $
-      p (var (const Nothing) "nope" (def 4 <> def 7)) `shouldBe` Just 7
+      it "can use a custom reader" $ do
+        p (var greaterThan5 "num"  mempty) `shouldBe` Nothing
+        p (var greaterThan5 "num2" mempty) `shouldBe` Just 7
 
-    it "'nonempty' weeds out variables set to the empty string" $
-      p (var (str <=< nonempty) "empty" mempty) `shouldBe` Nothing
+      it "'nonempty' weeds out variables set to the empty string" $
+        p (var (str <=< nonempty) "empty" mempty) `shouldBe` Nothing
+
+    context "alternatives" $ do
+      it "can look through a list of alternatives" $
+        p (asum
+          [ var (\_ -> pure 1) "nope"       mempty
+          , var (\_ -> pure 2) "still-nope" mempty
+          , var (\_ -> pure 3) "yep"        mempty
+          ]) `shouldBe` Just 3
+
+      it "variables can have default values" $
+        p (asum
+          [ var (\_ -> pure 1) "nope"       mempty
+          , var (\_ -> pure 2) "still-nope" (def 4)
+          , var (\_ -> pure 3) "yep"        mempty
+          ]) `shouldBe` Just 4
+
+    context "modifiers" $
+      it "the latter modifier overwrites the former" $
+        p (var (const Nothing) "nope" (def 4 <> def 7)) `shouldBe` Just 7
+
 
 greaterThan5 :: Reader Int
 greaterThan5 s = do v <- readMaybe s; guard (v > 5); return v
