@@ -12,7 +12,7 @@
 --
 -- hello :: IO Hello
 -- hello = 'Env.parse' ('header' "envparse example") $
---   Hello \<$\> 'var' 'str' \"NAME\" ('help' \"Target for the greeting\")
+--   Hello \<$\> 'var' ('str' <=< 'nonempty') \"NAME\" ('help' \"Target for the greeting\")
 --
 -- main :: IO ()
 -- main = do
@@ -31,6 +31,7 @@ module Env
   , Var
   , Reader
   , str
+  , nonempty
   , auto
   , def
   , helpDef
@@ -38,6 +39,7 @@ module Env
   -- * Re-exports
   -- $re-exports
   , (<$>), (<*>), (<*), (*>)
+  , (<=<), (>=>)
   , (<>), mempty, mconcat
   , asum
   -- * Testing
@@ -46,6 +48,7 @@ module Env
   ) where
 
 import           Control.Applicative
+import           Control.Monad ((>=>), (<=<))
 import           Data.Foldable (asum)
 import           Data.String (IsString(..))
 import           Data.Monoid (Monoid(..), (<>))
@@ -101,7 +104,7 @@ data VarF a = VarF
   , varfHelpDef :: Maybe String
   } deriving (Functor)
 
--- | A String parser
+-- | An environment variable value parser. Use @(<=<)@ and @(>=>)@ to combine these
 type Reader a = String -> Maybe a
 
 -- | Parse a particular variable from the environment
@@ -123,6 +126,11 @@ var r n (Mod f) = Parser . liftAlt $ VarF
 -- | The trivial reader
 str :: IsString s => Reader s
 str = Just . fromString
+
+-- | The reader that accepts only non-empty strings
+nonempty :: Reader String
+nonempty [] = Nothing
+nonempty xs = Just xs
 
 -- | The reader that uses the 'Read' instance of the type
 --

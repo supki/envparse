@@ -20,4 +20,4 @@ main = do
 
 hello :: IO Hello
 hello = Env.parse (header "envparse example") $
-  Hello <$> var str "NAME" (help "Target for the greeting")
+  Hello <$> var (str <=< nonempty) "NAME" (help "Target for the greeting")

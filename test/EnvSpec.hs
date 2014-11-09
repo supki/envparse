@@ -13,7 +13,7 @@ default (Integer, Double, String)
 
 spec :: Spec
 spec =
-  describe "fromList" $ do
+  describe "fromEnv" $ do
     it "parsing the environment with the noop parser always fails" $
       p empty `shouldBe` Nothing
 
@@ -51,6 +51,9 @@ spec =
     it "the latter modifier overwrites the former" $
       p (var (const Nothing) "nope" (def 4 <> def 7)) `shouldBe` Just 7
 
+    it "'nonempty' weeds out variables set to the empty string" $
+      p (var (str <=< nonempty) "empty" mempty) `shouldBe` Nothing
+
 greaterThan5 :: Reader Int
 greaterThan5 s = do v <- readMaybe s; guard (v > 5); return v
 
@@ -59,11 +62,12 @@ p x = fromEnv x fancyEnv
 
 fancyEnv :: [(String, String)]
 fancyEnv =
-  [ "foo"  ~> "bar"
-  , "qux"  ~> "quux"
-  , "num"  ~> "4"
-  , "num2" ~> "7"
-  , "yep"  ~> "!"
+  [ "foo"    ~> "bar"
+  , "qux"    ~> "quux"
+  , "num"    ~> "4"
+  , "num2"   ~> "7"
+  , "yep"    ~> "!"
+  , "empty"  ~> ""
   ]
  where
   (~>) = (,)
