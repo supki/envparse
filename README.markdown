@@ -4,4 +4,6 @@ envparse
 
 [optparse-applicative][0], but for environment variables
 
+See `example/Main.hs` for an example application.
+
   [0]: https://hackage.haskell.org/package/optparse-applicative

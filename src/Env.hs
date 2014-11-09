@@ -1,6 +1,24 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE Safe #-}
--- | Boo
+-- | Here's a simple example
+--
+-- @
+-- module Main (main) where
+--
+-- import Env
+--
+-- newtype Hello = Hello { name :: String }
+--
+-- hello :: IO Hello
+-- hello = 'Env.parse' ('header' "envparse example") $
+--   Hello \<$\> 'var' 'str' \"NAME\" ('help' \"Target for the greeting\")
+--
+-- main :: IO ()
+-- main = do
+--   Hello { name } <- hello
+--   putStrLn (\"Hello, \" ++ name ++ \"!\")
+-- @
 module Env
   ( parse
   , Parser
@@ -65,9 +83,7 @@ die m = do IO.hPutStrLn IO.stderr m; exitFailure
 
 -- | An environment parser
 newtype Parser a = Parser (Alt VarF a)
-
-instance Functor Parser where
-  fmap f (Parser x) = Parser (fmap f x)
+    deriving (Functor)
 
 instance Applicative Parser where
   pure = Parser . pure
@@ -83,10 +99,7 @@ data VarF a = VarF
   , varfHelp    :: Maybe String
   , varfDef     :: Maybe a
   , varfHelpDef :: Maybe String
-  }
-
-instance Functor VarF where
-  fmap f v = v { varfReader = fmap f . varfReader v, varfDef = fmap f (varfDef v) }
+  } deriving (Functor)
 
 -- | A String parser
 type Reader a = String -> Maybe a
@@ -200,11 +213,11 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
   case varfHelp of
     Nothing -> [varfName]
     Just h
-      | k > 17    -> varfName : map (indent 25) (splitEvery 30 t)
+      | k > 15    -> indent 2 varfName : map (indent 25) (splitEvery 30 t)
       | otherwise ->
           case zipWith indent (25 - k : repeat 30) (splitEvery 30 t) of
-            (x : xs) -> (varfName ++ x) : xs
-            []       -> [varfName]
+            (x : xs) -> (indent 2 varfName ++ x) : xs
+            []       -> [indent 2 varfName]
      where k = length varfName
            t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
 
