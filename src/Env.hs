@@ -6,15 +6,15 @@
 -- @
 -- module Main (main) where
 --
--- import Control.Monad
+-- import Control.Monad (unless)
 -- import Env
 --
 -- data Hello = Hello { name :: String, quiet :: Bool }
 --
 -- hello :: IO Hello
--- hello = 'Env.parse' ('header' "envparse example") $
---   Hello \<$\> 'var' ('str' <=< 'nonempty') \"NAME\" ('help' \"Target for the greeting\")
---         \<*\> 'switch' \"QUIET\"                ('help' \"Whether to actually print the greeting\")
+-- hello = 'Env.parse' ('header' \"envparse example\") $
+--   Hello \<$\> 'var' ('str' <=< 'nonempty') \"NAME\"  ('help' \"Target for the greeting\")
+--         \<*\> 'switch'                 \"QUIET\" ('help' \"Whether to actually print the greeting\")
 --
 -- main :: IO ()
 -- main = do

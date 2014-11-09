@@ -1,7 +1,28 @@
 name:                envparse
 version:             0.1.0
 synopsis:            Parse environment variables
-description:         See README.markdown
+description:
+  Here's a simple example
+  .
+  @
+  module Main (main) where
+  .
+  import Control.Monad (unless)
+  import Env
+  .
+  data Hello = Hello &#x7b; name :: String, quiet :: Bool &#x7d;
+  .
+  hello :: IO Hello
+  hello = Env.parse (header \"envparse example\") $
+  &#x20; Hello \<$\> var (str <=< nonempty) \"NAME\"  (help \"Target for the greeting\")
+  &#x20;       \<*\> switch                 \"QUIET\" (help \"Whether to actually print the greeting\")
+  &#x20;
+  main :: IO ()
+  main = do
+  &#x20; Hello &#x7b; name, quiet &#x7d; <- hello
+  &#x20; unless quiet $
+  &#x20;   putStrLn (\"Hello, \" ++ name ++ \"!\")
+  @
 homepage:            http://example.com/
 license:             BSD2
 license-file:        LICENSE
