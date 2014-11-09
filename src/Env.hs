@@ -36,12 +36,12 @@ module Env
   , str
   , nonempty
   , auto
-  , Flag
+  , def
+  , helpDef
   , flag
   , switch
-  , def
+  , Flag
   , HasHelp
-  , helpDef
   , help
   -- * Re-exports
   -- $re-exports
@@ -111,7 +111,7 @@ data VarF a = VarF
   , varfHelpDef :: Maybe String
   } deriving (Functor)
 
--- | An environment variable value parser. Use @(<=<)@ and @(>=>)@ to combine these
+-- | An environment variable's value parser. Use @(<=<)@ and @(>=>)@ to combine these
 type Reader a = String -> Maybe a
 
 -- | Parse a particular variable from the environment
@@ -149,6 +149,8 @@ flag f t n (Mod g) = Parser . liftAlt $ VarF
   Flag { flagHelp } = g defaultFlag
 
 -- | A simple boolean 'flag'
+--
+-- /Note:/ same caveats apply
 switch :: String -> Mod Flag Bool -> Parser Bool
 switch = flag False True
 
@@ -162,8 +164,6 @@ nonempty [] = Nothing
 nonempty xs = Just xs
 
 -- | The reader that uses the 'Read' instance of the type
---
--- The name is somewhat weird, but that's an optparse-applicative's fault.
 auto :: Read a => Reader a
 auto = \s -> case reads s of [(v, "")] -> Just v; _ -> Nothing
 {-# ANN auto "HLint: ignore Redundant lambda" #-}
@@ -248,7 +248,7 @@ instance HasHelp Var where
 instance HasHelp Flag where
   setHelp h v = v { flagHelp = Just h }
 
--- | Attach a help text
+-- | Attach help text to the variable
 help :: HasHelp t => String -> Mod t a
 help = Mod . setHelp
 
