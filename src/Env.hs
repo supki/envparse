@@ -12,7 +12,6 @@ module Env
   , var
   , Var
   , Reader
-  , reader
   , str
   , auto
   , def
@@ -52,7 +51,7 @@ import           Env.Mon
 -- Prints the help text and exits with @EXIT_FAILURE@ if it encounters a parse error
 --
 -- @
--- >>> parse ('header' \"env-parse 0.1.0\") ('var' \"USER\" ('reader' 'str' <> 'def' \"nobody\"))
+-- >>> parse ('header' \"env-parse 0.1.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
 parse :: Mod Info a -> Parser a -> IO a
 parse i p = either die return . note (helpDoc i p) . fromEnv p =<< getEnvironment
@@ -89,21 +88,35 @@ data VarF a = VarF
 instance Functor VarF where
   fmap f v = v { varfReader = fmap f . varfReader v, varfDef = fmap f (varfDef v) }
 
+-- | A String parser
+type Reader a = String -> Maybe a
+
 -- | Parse a particular variable from the environment
 --
 -- @
--- >>> var \"EDITOR\" ('reader' 'str' <> 'def' \"vim\" <> 'helpDef' show)
+-- >>> var 'str' \"EDITOR\" ('def' \"vim\" <> 'helpDef' show)
 -- @
-var :: String -> Mod Var a -> Parser a
-var n (Mod f) = Parser . liftAlt $ VarF
+var :: Reader a -> String -> Mod Var a -> Parser a
+var r n (Mod f) = Parser . liftAlt $ VarF
   { varfName    = n
-  , varfReader  = varReader
+  , varfReader  = r
   , varfHelp    = varHelp
   , varfDef     = varDef
   , varfHelpDef = varHelpDef <*> varDef
   }
  where
-  Var { varReader, varHelp, varDef, varHelpDef } = f defaultVar
+  Var { varHelp, varDef, varHelpDef } = f defaultVar
+
+-- | The trivial reader
+str :: IsString s => Reader s
+str = Just . fromString
+
+-- | The reader that uses the 'Read' instance of the type
+--
+-- The name is somewhat weird, but that's an optparse-applicative's fault.
+auto :: Read a => Reader a
+auto = \s -> case reads s of [(v, "")] -> Just v; _ -> Nothing
+{-# ANN auto "HLint: ignore Redundant lambda" #-}
 
 
 -- | This represents a modification of the properties of a particular 'Parser'.
@@ -144,36 +157,17 @@ footer h = Mod (\i -> i { infoFooter = Just h })
 
 -- | Environment variable metadata
 data Var a = Var
-  { varReader  :: Reader a
-  , varHelp    :: Maybe String
+  { varHelp    :: Maybe String
   , varHelpDef :: Maybe (a -> String)
   , varDef     :: Maybe a
   }
 
--- | A String parser
-type Reader a = String -> Maybe a
-
 defaultVar :: Var a
 defaultVar = Var
-  { varReader = const Nothing
-  , varHelp = Nothing
-  , varDef = Nothing
+  { varHelp    = Nothing
+  , varDef     = Nothing
   , varHelpDef = Nothing
   }
-
--- | Define a way to read the value from a string
-reader :: Reader a -> Mod Var a
-reader r = Mod (\v -> v { varReader = r })
-
--- | The trivial reader
-str :: IsString s => Mod Var s
-str = reader (Just . fromString)
-
--- | The reader that uses the 'Read' instance of the type
---
--- The name is somewhat weird, but that's an optparse-applicative's fault.
-auto :: Read a => Mod Var a
-auto = reader $ \s -> case reads s of [(v, "")] -> Just v; _ -> Nothing
 
 -- | Attach a help text to the variable
 help :: String -> Mod Var a

@@ -18,38 +18,38 @@ spec =
       p empty `shouldBe` Nothing
 
     it "looking for the non-existing env var fails" $
-      p (var "xyzzy" str) `shouldBe` Nothing
+      p (var str "xyzzy" mempty) `shouldBe` Nothing
 
     it "looking for the existing env var is a success" $
-      p (var "foo" str) `shouldBe` Just "bar"
+      p (var str "foo" mempty) `shouldBe` Just "bar"
 
     it "looking for many existing env vars is a success" $ do
-      let x = (,) <$> var "foo" str <*> var "qux" str
+      let x = (,) <$> var str "foo" mempty <*> var str "qux" mempty
       p x `shouldBe` Just ("bar", "quux")
 
     it "can use a reader to parse the env var value" $
-      p (var "num" auto) `shouldBe` Just 4
+      p (var auto "num" mempty) `shouldBe` Just 4
 
     it "can use a custom reader" $ do
-      p (var "num"  (reader greaterThan5)) `shouldBe` Nothing
-      p (var "num2" (reader greaterThan5)) `shouldBe` Just 7
+      p (var greaterThan5 "num"  mempty) `shouldBe` Nothing
+      p (var greaterThan5 "num2" mempty) `shouldBe` Just 7
 
     it "can look through a list of alternatives" $
       p (asum
-        [ var "nope"       (reader (\_ -> pure 1))
-        , var "still-nope" (reader (\_ -> pure 2))
-        , var "yep"        (reader (\_ -> pure 3))
+        [ var (\_ -> pure 1) "nope"       mempty
+        , var (\_ -> pure 2) "still-nope" mempty
+        , var (\_ -> pure 3) "yep"        mempty
         ]) `shouldBe` Just 3
 
     it "variables can have default values" $
       p (asum
-        [ var "nope"       (reader (\_ -> pure 1))
-        , var "still-nope" (reader (\_ -> pure 2) <> def 4)
-        , var "yep"        (reader (\_ -> pure 3))
+        [ var (\_ -> pure 1) "nope"       mempty
+        , var (\_ -> pure 2) "still-nope" (def 4)
+        , var (\_ -> pure 3) "yep"        mempty
         ]) `shouldBe` Just 4
 
     it "the latter modifier overwrites the former" $
-      p (var "nope" (def 4 <> def 7)) `shouldBe` Just 7
+      p (var (const Nothing) "nope" (def 4 <> def 7)) `shouldBe` Just 7
 
 greaterThan5 :: Reader Int
 greaterThan5 s = do v <- readMaybe s; guard (v > 5); return v
