@@ -57,8 +57,10 @@ module Env
 import           Control.Applicative
 import           Control.Monad ((>=>), (<=<))
 import           Data.Foldable (asum)
-import           Data.String (IsString(..))
+import           Data.List (intercalate)
+import           Data.Maybe (catMaybes)
 import           Data.Monoid (Monoid(..), (<>))
+import           Data.String (IsString(..))
 import           System.Environment (getEnvironment)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
@@ -254,12 +256,12 @@ help = Mod . setHelp
 
 
 helpDoc :: Mod Info a -> Parser a -> String
-helpDoc (Mod f) (Parser p) = unlines $ concat
-  [ line infoHeader
-  , line infoDesc
-  , line (Just "Available environment variables:")
-  , unMon (runAlt (Mon . helpVarfDoc) p)
-  , line infoFooter
+helpDoc (Mod f) (Parser p) = intercalate "\n\n" . catMaybes $
+  [ infoHeader
+  , infoDesc
+  , Just "Available environment variables:"
+  , Just (intercalate "\n" (unMon (runAlt (Mon . helpVarfDoc) p)))
+  , infoFooter
   ]
  where
   Info { infoHeader, infoDesc, infoFooter } = f defaultInfo
@@ -287,9 +289,6 @@ splitEvery n xs = case splitAt n xs of ~(ys, zs) -> ys : splitEvery n zs
 
 indent :: Int -> String -> String
 indent n s = replicate n ' ' <> s
-
-line :: Maybe String -> [String]
-line = maybe [] (\h -> [h, ""])
 
 
 -- | Parse a static environment
