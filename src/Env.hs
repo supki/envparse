@@ -45,7 +45,7 @@ module Env
   , help
   -- * Re-exports
   -- $re-exports
-  , (<$>), (<*>), (<*), (*>)
+  , (<$>), Applicative(..), optional
   , (<=<), (>=>)
   , (<>), mempty, mconcat
   , asum
@@ -258,10 +258,10 @@ help = Mod . setHelp
 helpDoc :: Mod Info a -> Parser a -> String
 helpDoc (Mod f) (Parser p) = intercalate "\n\n" . catMaybes $
   [ infoHeader
-  , infoDesc
+  , fmap (intercalate "\n" . splitEvery 50) infoDesc
   , Just "Available environment variables:"
   , Just (intercalate "\n" (unMon (runAlt (Mon . helpVarfDoc) p)))
-  , infoFooter
+  , fmap (intercalate "\n" . splitEvery 50) infoFooter
   ]
  where
   Info { infoHeader, infoDesc, infoFooter } = f defaultInfo
@@ -269,7 +269,7 @@ helpDoc (Mod f) (Parser p) = intercalate "\n\n" . catMaybes $
 helpVarfDoc :: VarF a -> [String]
 helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
   case varfHelp of
-    Nothing -> [varfName]
+    Nothing -> [indent 2 varfName]
     Just h
       | k > 15    -> indent 2 varfName : map (indent 25 . stripl) (splitEvery 30 t)
       | otherwise ->
