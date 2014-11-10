@@ -10,9 +10,13 @@ module Env.Free
   , AltF(..)
   , liftAlt
   , runAlt
+  , foldAlt
   ) where
 
 import Control.Applicative (Applicative(..), Alternative(..), liftA2)
+import Data.Monoid (Monoid)
+
+import Env.Mon
 
 
 newtype Alt f a = Alt { unAlt :: [AltF f a] }
@@ -60,3 +64,6 @@ runAlt u = go where
   go2 :: AltF f b -> g b
   go2 (Pure a) = pure a
   go2 (Ap x f) = liftA2 (flip id) (u x) (go f)
+
+foldAlt :: Monoid p => (forall a. f a -> p) -> Alt f b -> p
+foldAlt f = unMon . runAlt (Mon . f)

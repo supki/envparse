@@ -58,6 +58,7 @@ import           Control.Applicative
 import           Control.Monad ((>=>), (<=<))
 import           Data.Foldable (asum)
 import           Data.List (intercalate)
+import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
 import           Data.Monoid (Monoid(..), (<>))
 import           Data.String (IsString(..))
@@ -66,7 +67,6 @@ import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
 import           Env.Free
-import           Env.Mon
 
 -- $re-exports
 -- External functions that may be useful to the consumer of the library
@@ -94,7 +94,7 @@ die m = do IO.hPutStrLn IO.stderr m; exitFailure
 
 
 -- | An environment parser
-newtype Parser a = Parser (Alt VarF a)
+newtype Parser a = Parser { unParser :: Alt VarF a }
     deriving (Functor)
 
 instance Applicative Parser where
@@ -256,15 +256,18 @@ help = Mod . setHelp
 
 
 helpDoc :: Mod Info a -> Parser a -> String
-helpDoc (Mod f) (Parser p) = intercalate "\n\n" . catMaybes $
+helpDoc (Mod f) p = intercalate "\n\n" . catMaybes $
   [ infoHeader
   , fmap (intercalate "\n" . splitEvery 50) infoDesc
   , Just "Available environment variables:"
-  , Just (intercalate "\n" (unMon (runAlt (Mon . helpVarfDoc) p)))
+  , Just (intercalate "\n" (helpParserDoc p))
   , fmap (intercalate "\n" . splitEvery 50) infoFooter
   ]
  where
   Info { infoHeader, infoDesc, infoFooter } = f defaultInfo
+
+helpParserDoc :: Parser a -> [String]
+helpParserDoc = concat . Map.elems . Map.fromList . foldAlt (\v -> [(varfName v, helpVarfDoc v)]) . unParser
 
 helpVarfDoc :: VarF a -> [String]
 helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
