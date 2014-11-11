@@ -52,7 +52,9 @@ library
     Env
   other-modules:
     Env.Free
+    Env.Help
     Env.Mon
+    Env.Parse
     Env.Val
   ghc-options:
     -Wall
