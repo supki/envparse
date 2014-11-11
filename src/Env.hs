@@ -43,13 +43,14 @@ module Env
   , help
   -- * Re-exports
   -- $re-exports
-  , (<$>), Applicative(..), optional
+  , pure, (<$>), (<*>), (*>), (<*), optional
+  , empty, (<|>)
   , (<=<), (>=>)
   , (<>), mempty, mconcat
   , asum
   -- * Testing
   -- $testing
-  , fromEnv
+  , parseTest
   ) where
 
 import           Control.Applicative
@@ -79,7 +80,14 @@ import           Env.Parse
 -- >>> parse ('header' \"env-parse 0.1.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
 parse :: Mod Info a -> Parser a -> IO a
-parse i p = either (die . helpDoc i p) return . fromEnv p =<< getEnvironment
+parse i p = either (die . helpDoc i p) return . static p =<< getEnvironment
 
 die :: String -> IO a
 die m = do IO.hPutStrLn IO.stderr m; exitFailure
+
+-- | Parse a static environment
+parseTest :: Parser a -> [(String, String)] -> Maybe a
+parseTest p = hush . static p
+
+hush :: Either a b -> Maybe b
+hush = either (const Nothing) Just

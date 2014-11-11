@@ -53,7 +53,6 @@ library
   other-modules:
     Env.Free
     Env.Help
-    Env.Mon
     Env.Parse
     Env.Val
   ghc-options:
@@ -73,5 +72,3 @@ test-suite spec
     test
   main-is:
     Spec.hs
-  cpp-options:
-    -DTEST

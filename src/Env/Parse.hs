@@ -3,7 +3,7 @@
 module Env.Parse
   ( Parser(..)
   , VarF(..)
-  , fromEnv
+  , static
   , Error(..)
   , Mod(..)
   , Info(..)
@@ -37,9 +37,8 @@ import           Env.Free
 import           Env.Val
 
 
--- | Parse a static environment
-fromEnv :: Parser a -> [(String, String)] -> Either [Error] a
-fromEnv (Parser p) xs = toEither (runAlt go p)
+static :: Parser a -> [(String, String)] -> Either [Error] a
+static (Parser p) xs = toEither (runAlt go p)
  where
   go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v =<< lookupVar v ys))
 
@@ -123,7 +122,7 @@ flag f t n (Mod g) = Parser . liftAlt $ VarF
 
 -- | A simple boolean 'flag'
 --
--- /Note:/ same caveats apply.
+-- /Note:/ the same caveats apply.
 switch :: String -> Mod Flag Bool -> Parser Bool
 switch = flag False True
 

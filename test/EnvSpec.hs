@@ -71,7 +71,7 @@ greaterThan5 :: Reader Int
 greaterThan5 s = note "fail" (do v <- readMaybe s; guard (v > 5); return v)
 
 p :: Parser a -> Maybe a
-p x = hush (fromEnv x fancyEnv)
+p x = parseTest x fancyEnv
 
 fancyEnv :: [(String, String)]
 fancyEnv =
@@ -87,6 +87,3 @@ fancyEnv =
 
 note :: a -> Maybe b -> Either a b
 note a = maybe (Left a) Right
-
-hush :: Either a b -> Maybe b
-hush = either (const Nothing) Just

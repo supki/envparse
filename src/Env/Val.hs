@@ -26,8 +26,8 @@ instance Monoid e => Applicative (Val e) where
 instance Monoid e => Alternative (Val e) where
   empty = Err mempty
 
-  Err _ <|> Ok x = Ok x
-  x     <|> _    = x
+  Err _ <|> x = x
+  x     <|> _ = x
 
 fromEither :: Either e a -> Val e a
 fromEither = either Err Ok
