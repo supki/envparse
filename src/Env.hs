@@ -142,7 +142,7 @@ flag
   -> String -> Mod Flag a -> Parser a
 flag f t n (Mod g) = Parser . liftAlt $ VarF
   { varfName    = n
-  , varfReader  = Just . maybe f (const t) . nonempty
+  , varfReader  = Just . maybe f (const t) . (nonempty :: Reader String)
   , varfHelp    = flagHelp
   , varfDef     = Just f
   , varfHelpDef = Nothing
@@ -161,9 +161,8 @@ str :: IsString s => Reader s
 str = Just . fromString
 
 -- | The reader that accepts only non-empty strings
-nonempty :: Reader String
-nonempty [] = Nothing
-nonempty xs = Just xs
+nonempty :: IsString s => Reader s
+nonempty = fmap fromString . go where go [] = Nothing; go xs = Just xs
 
 -- | The reader that uses the 'Read' instance of the type
 auto :: Read a => Reader a
