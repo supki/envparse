@@ -64,14 +64,14 @@ spec =
 
     context "modifiers" $
       it "the latter modifier overwrites the former" $
-        p (var (const Nothing) "nope" (def 4 <> def 7)) `shouldBe` Just 7
+        p (var (\_ -> Left "nope") "never" (def 4 <> def 7)) `shouldBe` Just 7
 
 
 greaterThan5 :: Reader Int
-greaterThan5 s = do v <- readMaybe s; guard (v > 5); return v
+greaterThan5 s = note "fail" (do v <- readMaybe s; guard (v > 5); return v)
 
 p :: Parser a -> Maybe a
-p x = fromEnv x fancyEnv
+p x = hush (fromEnv x fancyEnv)
 
 fancyEnv :: [(String, String)]
 fancyEnv =
@@ -85,3 +85,8 @@ fancyEnv =
  where
   (~>) = (,)
 
+note :: a -> Maybe b -> Either a b
+note a = maybe (Left a) Right
+
+hush :: Either a b -> Maybe b
+hush = either (const Nothing) Just

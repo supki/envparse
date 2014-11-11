@@ -36,6 +36,10 @@ extra-source-files:
   README.markdown
   example/Main.hs
 
+source-repository head
+  type:     git
+  location: https://github.com/supki/envparse
+
 library
   default-language:
     Haskell2010
@@ -49,6 +53,7 @@ library
   other-modules:
     Env.Free
     Env.Mon
+    Env.Val
   ghc-options:
     -Wall
 

@@ -58,6 +58,7 @@ import           Control.Applicative
 import           Control.Monad ((>=>), (<=<))
 import           Data.Foldable (asum)
 import           Data.List (intercalate)
+import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
 import           Data.Monoid (Monoid(..), (<>))
@@ -67,6 +68,7 @@ import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
 import           Env.Free
+import           Env.Val
 
 -- $re-exports
 -- External functions that may be useful to the consumer of the library
@@ -84,10 +86,7 @@ import           Env.Free
 -- >>> parse ('header' \"env-parse 0.1.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
 parse :: Mod Info a -> Parser a -> IO a
-parse i p = either die return . note (helpDoc i p) . fromEnv p =<< getEnvironment
-
-note :: a -> Maybe b -> Either a b
-note a = maybe (Left a) Right
+parse i p = either die return . mapLeft (helpDoc i p) . fromEnv p =<< getEnvironment
 
 die :: String -> IO a
 die m = do IO.hPutStrLn IO.stderr m; exitFailure
@@ -107,14 +106,14 @@ instance Alternative Parser where
 
 data VarF a = VarF
   { varfName    :: String
-  , varfReader  :: String -> Maybe a
+  , varfReader  :: Reader a
   , varfHelp    :: Maybe String
   , varfDef     :: Maybe a
   , varfHelpDef :: Maybe String
   } deriving (Functor)
 
 -- | An environment variable's value parser. Use @(<=<)@ and @(>=>)@ to combine these
-type Reader a = String -> Maybe a
+type Reader a = String -> Either String a
 
 -- | Parse a particular variable from the environment
 --
@@ -142,7 +141,7 @@ flag
   -> String -> Mod Flag a -> Parser a
 flag f t n (Mod g) = Parser . liftAlt $ VarF
   { varfName    = n
-  , varfReader  = Just . maybe f (const t) . (nonempty :: Reader String)
+  , varfReader  = Right . either (const f) (const t) . (nonempty :: Reader String)
   , varfHelp    = flagHelp
   , varfDef     = Just f
   , varfHelpDef = Nothing
@@ -158,15 +157,15 @@ switch = flag False True
 
 -- | The trivial reader
 str :: IsString s => Reader s
-str = Just . fromString
+str = Right . fromString
 
 -- | The reader that accepts only non-empty strings
 nonempty :: IsString s => Reader s
-nonempty = fmap fromString . go where go [] = Nothing; go xs = Just xs
+nonempty = fmap fromString . go where go [] = Left "a non-empty string is expected"; go xs = Right xs
 
 -- | The reader that uses the 'Read' instance of the type
 auto :: Read a => Reader a
-auto = \s -> case reads s of [(v, "")] -> Just v; _ -> Nothing
+auto = \s -> case reads s of [(v, "")] -> Right v; _ -> Left (show s ++ " is an invalid value")
 {-# ANN auto "HLint: ignore Redundant lambda" #-}
 
 
@@ -254,19 +253,19 @@ help :: HasHelp t => String -> Mod t a
 help = Mod . setHelp
 
 
-helpDoc :: Mod Info a -> Parser a -> String
-helpDoc (Mod f) p = intercalate "\n\n" . catMaybes $
+helpDoc :: Mod Info a -> Parser a -> [Error] -> String
+helpDoc (Mod f) p fs = intercalate "\n\n" . catMaybes $
   [ infoHeader
   , fmap (intercalate "\n" . splitEvery 50) infoDesc
   , Just "Available environment variables:"
   , Just (intercalate "\n" (helpParserDoc p))
   , fmap (intercalate "\n" . splitEvery 50) infoFooter
-  ]
+  ] ++ map Just (helpFailuresDoc fs)
  where
   Info { infoHeader, infoDesc, infoFooter } = f defaultInfo
 
 helpParserDoc :: Parser a -> [String]
-helpParserDoc = concat . Map.elems . Map.fromList . foldAlt (\v -> [(varfName v, helpVarfDoc v)]) . unParser
+helpParserDoc = concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc v)) . unParser
 
 helpVarfDoc :: VarF a -> [String]
 helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
@@ -281,6 +280,14 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
      where k = length varfName
            t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
 
+helpFailuresDoc :: [Error] -> [String]
+helpFailuresDoc [] = []
+helpFailuresDoc fs = ["Parsing errors:", intercalate "\n" (map helpFailureDoc fs)]
+
+helpFailureDoc :: Error -> String
+helpFailureDoc (ParseError n e)  = "  " ++ n ++ " cannot be parsed: " ++ e
+helpFailureDoc (ENoExistError n) = "  " ++ n ++ " is missing"
+
 stripl :: String -> String
 stripl (' ' : xs) = stripl xs
 stripl xs = xs
@@ -294,7 +301,26 @@ indent n s = replicate n ' ' <> s
 
 
 -- | Parse a static environment
-fromEnv :: Parser a -> [(String, String)] -> Maybe a
-fromEnv (Parser p) xs = runAlt go p
+fromEnv :: Parser a -> [(String, String)] -> Either [Error] a
+fromEnv (Parser p) xs = toEither (runAlt go p)
  where
-  go v = (varfReader v =<< lookup (varfName v) xs) <|> varfDef v
+  go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v =<< lookupVar v ys))
+
+  ys = Map.fromList xs
+
+lookupVar :: VarF a -> Map String String -> Either [Error] String
+lookupVar v = note [ENoExistError (varfName v)] . Map.lookup (varfName v)
+
+readVar :: VarF a -> String -> Either [Error] a
+readVar v = mapLeft (pure . ParseError (varfName v)) . varfReader v
+
+data Error
+  = ParseError String String
+  | ENoExistError String
+    deriving (Show, Eq)
+
+note :: a -> Maybe b -> Either a b
+note a = maybe (Left a) Right
+
+mapLeft :: (a -> b) -> Either a t -> Either b t
+mapLeft f = either (Left . f) Right
