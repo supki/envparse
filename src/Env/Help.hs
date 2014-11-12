@@ -15,10 +15,10 @@ import           Env.Parse
 helpDoc :: Mod Info a -> Parser a -> [Error] -> String
 helpDoc (Mod f) p fs = intercalate "\n\n" . catMaybes $
   [ infoHeader
-  , fmap (intercalate "\n" . splitEvery 50) infoDesc
+  , fmap (intercalate "\n" . splitWords 50) infoDesc
   , Just "Available environment variables:"
   , Just (intercalate "\n" (helpParserDoc p))
-  , fmap (intercalate "\n" . splitEvery 50) infoFooter
+  , fmap (intercalate "\n" . splitWords 50) infoFooter
   ] ++ map Just (helpFailuresDoc fs)
  where
   Info { infoHeader, infoDesc, infoFooter } = f defaultInfo
@@ -31,9 +31,9 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
   case varfHelp of
     Nothing -> [indent 2 varfName]
     Just h
-      | k > 15    -> indent 2 varfName : map (indent 25 . stripl) (splitEvery 30 t)
+      | k > 15    -> indent 2 varfName : map (indent 25) (splitWords 30 t)
       | otherwise ->
-          case zipWith indent (23 - k : repeat 25) (map stripl (splitEvery 30 t)) of
+          case zipWith indent (23 - k : repeat 25) (splitWords 30 t) of
             (x : xs) -> (indent 2 varfName ++ x) : xs
             []       -> [indent 2 varfName]
      where k = length varfName
@@ -47,13 +47,19 @@ helpFailureDoc :: Error -> String
 helpFailureDoc (ParseError n e)  = "  " ++ n ++ " cannot be parsed: " ++ e
 helpFailureDoc (ENoExistError n) = "  " ++ n ++ " is missing"
 
-stripl :: String -> String
-stripl (' ' : xs) = stripl xs
-stripl xs = xs
+splitWords :: Int -> String -> [String]
+splitWords n = go [] 0 . words
+ where
+  go acc _ [] = prep acc
+  go acc k (w : ws)
+    | k + z < n = go (w : acc) (k + z) ws
+    | z > n     = prep acc ++ case splitAt n w of (w', w'') -> w' : go [] 0 (w'' : ws)
+    | otherwise = prep acc ++ go [w] z ws
+   where
+    z = length w
 
-splitEvery :: Int -> String -> [String]
-splitEvery _ "" = []
-splitEvery n xs = case splitAt n xs of ~(ys, zs) -> ys : splitEvery n zs
+  prep []  = []
+  prep acc = [unwords (reverse acc)]
 
 indent :: Int -> String -> String
 indent n s = replicate n ' ' <> s
