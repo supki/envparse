@@ -35,8 +35,8 @@
 <a name="line-26"></a><a name="instance%20Alternative%20(Val%20e)"></a><span class='hs-keyword'>instance</span> <span class='hs-conid'>Monoid</span> <span class='hs-varid'>e</span> <span class='hs-keyglyph'>=&gt;</span> <span class='hs-conid'>Alternative</span> <span class='hs-layout'>(</span><span class='hs-conid'>Val</span> <span class='hs-varid'>e</span><span class='hs-layout'>)</span> <span class='hs-keyword'>where</span>
 <a name="line-27"></a>  <span class='hs-varid'>empty</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Err</span> <span class='hs-varid'>mempty</span>
 <a name="line-28"></a>
-<a name="line-29"></a>  <span class='hs-conid'>Err</span> <span class='hs-keyword'>_</span> <span class='hs-varop'>&lt;|&gt;</span> <span class='hs-varid'>x</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>x</span>
-<a name="line-30"></a>  <span class='hs-varid'>x</span>     <span class='hs-varop'>&lt;|&gt;</span> <span class='hs-keyword'>_</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>x</span>
+<a name="line-29"></a>  <span class='hs-conid'>Err</span> <span class='hs-keyword'>_</span> <span class='hs-varop'>&lt;|&gt;</span> <span class='hs-conid'>Ok</span> <span class='hs-varid'>x</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Ok</span> <span class='hs-varid'>x</span>
+<a name="line-30"></a>  <span class='hs-varid'>x</span>     <span class='hs-varop'>&lt;|&gt;</span> <span class='hs-keyword'>_</span>    <span class='hs-keyglyph'>=</span> <span class='hs-varid'>x</span>
 <a name="line-31"></a>
 <a name="line-32"></a><a name="fromEither"></a><span class='hs-definition'>fromEither</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>Either</span> <span class='hs-varid'>e</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Val</span> <span class='hs-varid'>e</span> <span class='hs-varid'>a</span>
 <a name="line-33"></a><span class='hs-definition'>fromEither</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>either</span> <span class='hs-conid'>Err</span> <span class='hs-conid'>Ok</span>
