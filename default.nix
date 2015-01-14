@@ -1,14 +1,14 @@
-{ cabal, hspec }:
+{ haskellPackages ? (import <nixpkgs> {}).haskellPackages }:
 
-cabal.mkDerivation (self: {
+haskellPackages.cabal.mkDerivation (self: {
   pname = "envparse";
   version = "0.1.0";
-  src = ./.;
-  testDepends = [ hspec ];
+  src = builtins.filterSource (path: type: type != "unknown") ./.;
+  testDepends = with haskellPackages; [ hspec ];
   meta = {
-    homepage = "http://example.com/";
+    homepage = "https://github.com/supki/envparse";
     description = "Parse environment variables";
-    license = self.stdenv.lib.licenses.bsd3; # this is a lie
+    license = self.stdenv.lib.licenses.bsd2;
     platforms = self.ghc.meta.platforms;
   };
 })

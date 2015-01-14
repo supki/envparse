@@ -1,5 +1,5 @@
 {-# LANGUAGE Safe #-}
--- | Here's a simple example
+-- | Here's a simple example of a program that uses @envparse@'s parser:
 --
 -- @
 -- module Main (main) where
@@ -10,7 +10,7 @@
 -- data Hello = Hello { name :: String, quiet :: Bool }
 --
 -- hello :: IO Hello
--- hello = 'Env.parse' ('header' \"envparse example\") $
+-- hello = Env.'parse' ('header' \"envparse example\") $
 --   Hello \<$\> 'var' ('str' <=< 'nonempty') \"NAME\"  ('help' \"Target for the greeting\")
 --         \<*\> 'switch'                 \"QUIET\" ('help' \"Whether to actually print the greeting\")
 --
@@ -19,6 +19,27 @@
 --   Hello { name, quiet } <- hello
 --   unless quiet $
 --     putStrLn (\"Hello, \" ++ name ++ \"!\")
+-- @
+--
+-- The @NAME@ environment variable is mandatory and contains the name of the person to
+-- greet. @QUIET@, on the other hand, is an optional boolean flag, false by default, that
+-- decides whether the greeting should be silent.
+--
+-- If the @NAME@ variable is undefined in the environment then running the program will
+-- result in the following help text:
+--
+-- @
+-- envparse example
+--
+-- Available environment variables:
+--
+--   NAME                   Target for the greeting
+--   QUIET                  Whether to actually print the
+--                          greeting
+--
+-- Parsing errors:
+--
+--   NAME is missing
 -- @
 module Env
   ( parse

@@ -1,3 +1,3 @@
 source "https://rubygems.org"
 
-gem "guard-haskell", "~> 2.0"
+gem "guard-haskell", "~> 2.1"

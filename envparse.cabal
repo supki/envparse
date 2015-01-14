@@ -2,7 +2,7 @@ name:                envparse
 version:             0.1.0
 synopsis:            Parse environment variables
 description:
-  Here's a simple example
+  Here's a simple example of a program that uses @envparse@'s parser:
   .
   @
   module Main (main) where
@@ -23,7 +23,28 @@ description:
   &#x20; unless quiet $
   &#x20;   putStrLn (\"Hello, \" ++ name ++ \"!\")
   @
-homepage:            http://example.com/
+  .
+  The @NAME@ environment variable is mandatory and contains the name of the person to
+  greet. @QUIET@, on the other hand, is an optional boolean flag, false by default, that
+  decides whether the greeting should be silent.
+  .
+  If the @NAME@ variable is undefined in the environment then running the program will
+  result in the following help text:
+  .
+  @
+  envparse example
+  &#x20;
+  Available environment variables:
+  &#x20;
+  &#x20; NAME                   Target for the greeting
+  &#x20; QUIET                  Whether to actually print the
+  &#x20;                        greeting
+  &#x20;
+  Parsing errors:
+  &#x20;
+  &#x20; NAME is missing
+  @
+homepage:            https://github.com/supki/envparse
 license:             BSD2
 license-file:        LICENSE
 author:              Matvey Aksenov
