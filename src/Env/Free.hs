@@ -1,12 +1,14 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- @Alt F@ is the free 'Alternative' functor on @F@
+-- | @Alt F@ is the free 'Alternative' functor on @F@
 module Env.Free
   ( Alt(..)
   , liftAlt
   , runAlt
   , foldAlt
+  -- * Debug
+  , inspect
   ) where
 
 import Control.Applicative (Applicative(..), Alternative(..))
@@ -18,14 +20,22 @@ data Alt f a where
   Pure :: a -> Alt f a
   Ap   :: Alt f (a -> b) -> Alt f a -> Alt f b
   Alt  :: Alt f a -> Alt f a -> Alt f a
-  Fun  :: f a -> Alt f a
+  Lift :: f a -> Alt f a
+
+-- | Print the free structure
+inspect :: Alt f a -> String
+inspect Nope      = "Nope"
+inspect (Pure _)  = "Pure _"
+inspect (Ap f x)  = concat ["(", inspect f, ") <*> (", inspect x, ")"]
+inspect (Alt x y) = concat ["(", inspect x, ") <|> (", inspect y, ")"]
+inspect (Lift _)  = "Lift _"
 
 instance Functor f => Functor (Alt f) where
   fmap _ Nope      = Nope
   fmap f (Pure a)  = Pure (f a)
   fmap f (Ap a v)  = Ap (fmap (f .) a) v
   fmap f (Alt a b) = Alt (fmap f a) (fmap f b)
-  fmap f (Fun a)   = Fun (fmap f a)
+  fmap f (Lift a)  = Lift (fmap f a)
 
 instance Functor f => Applicative (Alt f) where
   pure = Pure
@@ -37,7 +47,7 @@ instance Functor f => Alternative (Alt f) where
 
 
 liftAlt :: f a -> Alt f a
-liftAlt = Fun
+liftAlt = Lift
 
 runAlt :: forall f g a. Alternative g => (forall x. f x -> g x) -> Alt f a -> g a
 runAlt u = go where
@@ -46,7 +56,7 @@ runAlt u = go where
   go (Pure a)  = pure a
   go (Ap f x)  = go f <*> go x
   go (Alt s t) = go s <|> go t
-  go (Fun x)   = u x
+  go (Lift x)  = u x
 
 foldAlt :: Monoid p => (forall a. f a -> p) -> Alt f b -> p
 foldAlt f = unMon . runAlt (Mon . f)
