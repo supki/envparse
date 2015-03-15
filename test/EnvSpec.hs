@@ -78,7 +78,7 @@ p :: Parser a -> Maybe a
 p = pi mempty
 
 pi :: Mod Info a -> Parser a -> Maybe a
-pi m x = parseTest m x fancyEnv
+pi m x = hush (parsePure m x fancyEnv)
 
 fancyEnv :: [(String, String)]
 fancyEnv =
@@ -95,3 +95,6 @@ fancyEnv =
 
 note :: a -> Maybe b -> Either a b
 note a = maybe (Left a) Right
+
+hush :: Either a b -> Maybe b
+hush = either (const Nothing) Just

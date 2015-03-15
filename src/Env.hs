@@ -43,6 +43,7 @@
 -- @
 module Env
   ( parse
+  , parseOr
   , Parser
   , Mod
   , Info
@@ -72,7 +73,7 @@ module Env
   , asum
   -- * Testing
   -- $testing
-  , parseTest
+  , parsePure
   ) where
 
 import           Control.Applicative
@@ -95,28 +96,34 @@ import           Env.Parse
 -- what you want them to do
 
 
--- | Succesfully parse the environment or die
+-- | Parse the environment or die
 --
--- Prints the help text and exits with @EXIT_FAILURE@ on encountering a parse error
+-- Prints the help text and exits with @EXIT_FAILURE@ on encountering a parse error.
 --
 -- @
 -- >>> parse ('header' \"env-parse 0.1.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
 parse :: Mod Info a -> Parser a -> IO a
-parse (Mod f) (Parser p) = either (die . helpDoc i p') return . static p' =<< getEnvironment
- where
-  i = f defaultInfo
-  p' = Parser (maybe p (\pre -> hoistAlt (\v -> v { varfName = pre ++ varfName v }) p) (infoPrefixed i))
+parse m = fmap (either (\_ -> error "absurd") id) . parseOr die m
+
+-- | Try to parse the environment
+--
+-- Use this if simply dying on failure (the behavior of 'parse') is inadequate for your needs.
+parseOr :: (String -> IO a) -> Mod Info b -> Parser b -> IO (Either a b)
+parseOr f m p = traverseLeft f . parsePure m p =<< getEnvironment
 
 die :: String -> IO a
 die m = do IO.hPutStrLn IO.stderr m; exitFailure
 
--- | Parse a static environment
-parseTest :: Mod Info a -> Parser a -> [(String, String)] -> Maybe a
-parseTest (Mod f) (Parser p) = hush . static p'
+-- | Try to parse a pure environment
+parsePure :: Mod Info a -> Parser a -> [(String, String)] -> Either String a
+parsePure (Mod f) (Parser p) = mapLeft (helpDoc i p') . static p'
  where
   i = f defaultInfo
   p' = Parser (maybe p (\pre -> hoistAlt (\v -> v { varfName = pre ++ varfName v }) p) (infoPrefixed i))
 
-hush :: Either a b -> Maybe b
-hush = either (const Nothing) Just
+mapLeft :: (a -> b) -> Either a t -> Either b t
+mapLeft f = either (Left . f) Right
+
+traverseLeft :: Applicative f => (a -> f b) -> Either a t -> f (Either b t)
+traverseLeft f = either (fmap Left . f) (pure . Right)
