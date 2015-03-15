@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ViewPatterns #-}
 module Env.Parse
   ( Parser(..)
   , VarF(..)
@@ -11,6 +12,7 @@ module Env.Parse
   , header
   , desc
   , footer
+  , prefixed
   , var
   , Var(..)
   , defaultVar
@@ -37,12 +39,11 @@ import           Env.Free
 import           Env.Val
 
 
-static :: Parser a -> [(String, String)] -> Either [Error] a
-static (Parser p) xs = toEither (runAlt go p)
+static :: Parser b -> [(String, String)] -> Either [Error] b
+static (Parser p) (Map.fromList -> env) =
+  toEither (runAlt go p)
  where
-  go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v =<< lookupVar v ys))
-
-  ys = Map.fromList xs
+  go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v =<< lookupVar v env))
 
 lookupVar :: VarF a -> Map String String -> Either [Error] String
 lookupVar v = note [ENoExistError (varfName v)] . Map.lookup (varfName v)
@@ -151,16 +152,18 @@ instance Monoid (Mod t a) where
 
 -- | Parser's metadata
 data Info a = Info
-  { infoHeader :: Maybe String
-  , infoDesc   :: Maybe String
-  , infoFooter :: Maybe String
+  { infoHeader   :: Maybe String
+  , infoDesc     :: Maybe String
+  , infoFooter   :: Maybe String
+  , infoPrefixed :: Maybe String
   }
 
 defaultInfo :: Info a
 defaultInfo = Info
-  { infoHeader = Nothing
-  , infoDesc   = Nothing
-  , infoFooter = Nothing
+  { infoHeader   = Nothing
+  , infoDesc     = Nothing
+  , infoFooter   = Nothing
+  , infoPrefixed = Nothing
   }
 
 -- | A help text header (it usually includes an application name and version)
@@ -174,6 +177,10 @@ desc h = Mod (\i -> i { infoDesc = Just h })
 -- | A help text footer (it usually includes examples)
 footer :: String -> Mod Info a
 footer h = Mod (\i -> i { infoFooter = Just h })
+
+-- | The string to prepend to every declared environment variable
+prefixed :: String -> Mod Info a
+prefixed h = Mod (\i -> i { infoPrefixed = Just h })
 
 
 -- | Environment variable metadata

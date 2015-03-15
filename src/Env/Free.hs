@@ -7,6 +7,7 @@ module Env.Free
   , liftAlt
   , runAlt
   , foldAlt
+  , hoistAlt
   -- * Debug
   , inspect
   ) where
@@ -60,6 +61,9 @@ runAlt u = go where
 
 foldAlt :: Monoid p => (forall a. f a -> p) -> Alt f b -> p
 foldAlt f = unMon . runAlt (Mon . f)
+
+hoistAlt :: forall f g b. Functor g => (forall a. f a -> g a) -> Alt f b -> Alt g b
+hoistAlt nat = runAlt (Lift . nat)
 
 
 -- | The 'Alternative' functor induced by the 'Monoid'

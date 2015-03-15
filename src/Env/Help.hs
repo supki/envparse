@@ -12,16 +12,15 @@ import           Env.Free
 import           Env.Parse
 
 
-helpDoc :: Mod Info a -> Parser a -> [Error] -> String
-helpDoc (Mod f) p fs = intercalate "\n\n" . catMaybes $
-  [ infoHeader
-  , fmap (intercalate "\n" . splitWords 50) infoDesc
-  , Just "Available environment variables:"
-  , Just (intercalate "\n" (helpParserDoc p))
-  , fmap (intercalate "\n" . splitWords 50) infoFooter
-  ] ++ map Just (helpFailuresDoc fs)
- where
-  Info { infoHeader, infoDesc, infoFooter } = f defaultInfo
+helpDoc :: Info a -> Parser b -> [Error] -> String
+helpDoc Info { infoHeader, infoDesc, infoFooter } p fs =
+  intercalate "\n\n" . catMaybes $
+    [ infoHeader
+    , fmap (intercalate "\n" . splitWords 50) infoDesc
+    , Just "Available environment variables:"
+    , Just (intercalate "\n" (helpParserDoc p))
+    , fmap (intercalate "\n" . splitWords 50) infoFooter
+    ] ++ map Just (helpFailuresDoc fs)
 
 helpParserDoc :: Parser a -> [String]
 helpParserDoc = concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc v)) . unParser

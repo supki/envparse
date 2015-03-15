@@ -49,6 +49,7 @@ module Env
   , header
   , desc
   , footer
+  , prefixed
   , var
   , Var
   , Reader
@@ -82,6 +83,7 @@ import           System.Environment (getEnvironment)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
+import           Env.Free (hoistAlt)
 import           Env.Help (helpDoc)
 import           Env.Parse
 
@@ -93,22 +95,28 @@ import           Env.Parse
 -- what you want them to do
 
 
--- | Parse the environment
+-- | Succesfully parse the environment or die
 --
--- Prints the help text and exits with @EXIT_FAILURE@ if it encounters a parse error
+-- Prints the help text and exits with @EXIT_FAILURE@ on encountering a parse error
 --
 -- @
 -- >>> parse ('header' \"env-parse 0.1.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
 parse :: Mod Info a -> Parser a -> IO a
-parse i p = either (die . helpDoc i p) return . static p =<< getEnvironment
+parse (Mod f) (Parser p) = either (die . helpDoc i p') return . static p' =<< getEnvironment
+ where
+  i = f defaultInfo
+  p' = Parser (maybe p (\pre -> hoistAlt (\v -> v { varfName = pre ++ varfName v }) p) (infoPrefixed i))
 
 die :: String -> IO a
 die m = do IO.hPutStrLn IO.stderr m; exitFailure
 
 -- | Parse a static environment
-parseTest :: Parser a -> [(String, String)] -> Maybe a
-parseTest p = hush . static p
+parseTest :: Mod Info a -> Parser a -> [(String, String)] -> Maybe a
+parseTest (Mod f) (Parser p) = hush . static p'
+ where
+  i = f defaultInfo
+  p' = Parser (maybe p (\pre -> hoistAlt (\v -> v { varfName = pre ++ varfName v }) p) (infoPrefixed i))
 
 hush :: Either a b -> Maybe b
 hush = either (const Nothing) Just

@@ -3,6 +3,7 @@ module EnvSpec (spec) where
 
 import Control.Applicative
 import Control.Monad
+import Prelude hiding (pi)
 import Test.Hspec
 import Text.Read (readMaybe)
 
@@ -62,25 +63,32 @@ spec =
           , var (\_ -> pure 3) "yep"        mempty
           ]) `shouldBe` Just 4
 
-    context "modifiers" $
+    context "modifiers" $ do
       it "the latter modifier overwrites the former" $
         p (var (\_ -> Left "nope") "never" (def 4 <> def 7)) `shouldBe` Just 7
+
+      it "‘prefixed’ modifier changes the names of the variables" $
+        pi (prefixed "spec_") (var str "foo" mempty) `shouldBe` Just "totally-not-bar"
 
 
 greaterThan5 :: Reader Int
 greaterThan5 s = note "fail" (do v <- readMaybe s; guard (v > 5); return v)
 
 p :: Parser a -> Maybe a
-p x = parseTest x fancyEnv
+p = pi mempty
+
+pi :: Mod Info a -> Parser a -> Maybe a
+pi m x = parseTest m x fancyEnv
 
 fancyEnv :: [(String, String)]
 fancyEnv =
-  [ "foo"    ~> "bar"
-  , "qux"    ~> "quux"
-  , "num"    ~> "4"
-  , "num2"   ~> "7"
-  , "yep"    ~> "!"
-  , "empty"  ~> ""
+  [ "foo"      ~> "bar"
+  , "spec_foo" ~> "totally-not-bar"
+  , "qux"      ~> "quux"
+  , "num"      ~> "4"
+  , "num2"     ~> "7"
+  , "yep"      ~> "!"
+  , "empty"    ~> ""
   ]
  where
   (~>) = (,)

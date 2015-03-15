@@ -44,7 +44,7 @@ description:
   &#x20;
   &#x20; NAME is missing
   @
-homepage:            https://github.com/supki/envparse
+homepage:            https://supki.github.io/envparse
 license:             BSD2
 license-file:        LICENSE
 author:              Matvey Aksenov
