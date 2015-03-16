@@ -68,22 +68,26 @@ spec =
         p (var (\_ -> Left "nope") "never" (def 4 <> def 7)) `shouldBe` Just 7
 
       it "‘prefixed’ modifier changes the names of the variables" $
-        pi (prefixed "spec_") (var str "foo" mempty) `shouldBe` Just "totally-not-bar"
+        p (prefixed "spec_" (var str "foo" mempty)) `shouldBe` Just "totally-not-bar"
+
+      it "‘prefixed’ modifier can be nested" $
+        p (prefixed "pre" (prefixed "pro" (var str "morphism" mempty)))
+       `shouldBe`
+        Just "zygohistomorphic"
 
 
 greaterThan5 :: Reader Int
 greaterThan5 s = note "fail" (do v <- readMaybe s; guard (v > 5); return v)
 
 p :: Parser a -> Maybe a
-p = pi mempty
-
-pi :: Mod Info a -> Parser a -> Maybe a
-pi m x = hush (parsePure m x fancyEnv)
+p x = hush (parsePure mempty x fancyEnv)
 
 fancyEnv :: [(String, String)]
 fancyEnv =
   [ "foo"      ~> "bar"
   , "spec_foo" ~> "totally-not-bar"
+  , "prepromorphism"
+               ~> "zygohistomorphic"
   , "qux"      ~> "quux"
   , "num"      ~> "4"
   , "num2"     ~> "7"

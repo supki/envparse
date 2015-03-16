@@ -84,7 +84,6 @@ import           System.Environment (getEnvironment)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
-import           Env.Free (hoistAlt)
 import           Env.Help (helpDoc)
 import           Env.Parse
 
@@ -101,7 +100,7 @@ import           Env.Parse
 -- Prints the help text and exits with @EXIT_FAILURE@ on encountering a parse error.
 --
 -- @
--- >>> parse ('header' \"env-parse 0.1.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
+-- >>> parse ('header' \"env-parse 0.2.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
 parse :: Mod Info a -> Parser a -> IO a
 parse m = fmap (either (\_ -> error "absurd") id) . parseOr die m
@@ -117,10 +116,7 @@ die m = do IO.hPutStrLn IO.stderr m; exitFailure
 
 -- | Try to parse a pure environment
 parsePure :: Mod Info a -> Parser a -> [(String, String)] -> Either String a
-parsePure (Mod f) (Parser p) = mapLeft (helpDoc i p') . static p'
- where
-  i = f defaultInfo
-  p' = Parser (maybe p (\pre -> hoistAlt (\v -> v { varfName = pre ++ varfName v }) p) (infoPrefixed i))
+parsePure (Mod f) p = mapLeft (helpDoc (f defaultInfo) p) . static p
 
 mapLeft :: (a -> b) -> Either a t -> Either b t
 mapLeft f = either (Left . f) Right

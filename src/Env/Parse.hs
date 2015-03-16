@@ -70,6 +70,11 @@ instance Alternative Parser where
   empty = Parser empty
   Parser f <|> Parser x = Parser (f <|> x)
 
+-- | The string to prepend to the name of every declared environment variable
+prefixed :: String -> Parser a -> Parser a
+prefixed pre =
+  Parser . hoistAlt (\v -> v { varfName = pre ++ varfName v }) . unParser
+
 
 data Error
   = ParseError String String
@@ -155,7 +160,6 @@ data Info a = Info
   { infoHeader   :: Maybe String
   , infoDesc     :: Maybe String
   , infoFooter   :: Maybe String
-  , infoPrefixed :: Maybe String
   }
 
 defaultInfo :: Info a
@@ -163,7 +167,6 @@ defaultInfo = Info
   { infoHeader   = Nothing
   , infoDesc     = Nothing
   , infoFooter   = Nothing
-  , infoPrefixed = Nothing
   }
 
 -- | A help text header (it usually includes an application name and version)
@@ -177,10 +180,6 @@ desc h = Mod (\i -> i { infoDesc = Just h })
 -- | A help text footer (it usually includes examples)
 footer :: String -> Mod Info a
 footer h = Mod (\i -> i { infoFooter = Just h })
-
--- | The string to prepend to every declared environment variable
-prefixed :: String -> Mod Info a
-prefixed h = Mod (\i -> i { infoPrefixed = Just h })
 
 
 -- | Environment variable metadata
