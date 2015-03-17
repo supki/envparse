@@ -44,7 +44,7 @@ helpFailuresDoc fs = ["Parsing errors:", intercalate "\n" (map helpFailureDoc fs
 
 helpFailureDoc :: Error -> String
 helpFailureDoc (ParseError n e)  = "  " ++ n ++ " cannot be parsed: " ++ e
-helpFailureDoc (ENoExistError n) = "  " ++ n ++ " is missing"
+helpFailureDoc (ENoExistError n) = "  " ++ n ++ " is unset"
 
 splitWords :: Int -> String -> [String]
 splitWords n = go [] 0 . words

@@ -39,7 +39,7 @@
 --
 -- Parsing errors:
 --
---   NAME is missing
+--   NAME is unset
 -- @
 module Env
   ( parse

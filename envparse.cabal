@@ -42,7 +42,7 @@ description:
   &#x20;
   Parsing errors:
   &#x20;
-  &#x20; NAME is missing
+  &#x20; NAME is unset
   @
 homepage:            https://supki.github.io/envparse
 license:             BSD2
