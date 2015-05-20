@@ -1,3 +1,8 @@
+0.2.1
+=====
+
+  * Cosmetic changes in the help output.
+
 0.2.0
 =====
 
@@ -5,7 +10,7 @@
 
   * Added `parseOr`, a slightly generalized version of `parse`.
 
-  * Renamed `parseTest` to `parsePure`
+  * Renamed `parseTest` to `parsePure`.
 
 0.1.0
 =====
