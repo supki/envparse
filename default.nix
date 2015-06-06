@@ -1,14 +1,2 @@
-{ haskellPackages ? (import <nixpkgs> {}).haskellPackages }:
-
-haskellPackages.cabal.mkDerivation (self: {
-  pname = "envparse";
-  version = "0.2.0";
-  src = builtins.filterSource (path: type: type != "unknown") ./.;
-  testDepends = with haskellPackages; [ hspec ];
-  meta = {
-    homepage = "https://github.com/supki/envparse";
-    description = "Parse environment variables";
-    license = self.stdenv.lib.licenses.bsd2;
-    platforms = self.ghc.meta.platforms;
-  };
-})
+{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc7101" }:
+nixpkgs.pkgs.haskell.packages.${compiler}.callPackage ./envparse.nix {}
