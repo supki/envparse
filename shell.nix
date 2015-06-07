@@ -4,10 +4,10 @@
     hdevtools doctest
   ]);
   cabal-install = pkgs.haskell.packages.${compiler}.cabal-install;
-  env = (import ./default.nix { inherit nixpkgs compiler; }).env;
+  pkg = (import ./default.nix { inherit nixpkgs compiler; });
 in
   pkgs.stdenv.mkDerivation rec {
-    name = "envparse";
-    buildInputs = [ ghc cabal-install ] ++ env.buildInputs;
-    shellHook = "${env.shellHook}\nexport IN_WHICH_NIX_SHELL=${name}";
+    name = pkg.pname;
+    buildInputs = [ ghc cabal-install ] ++ pkg.env.buildInputs;
+    shellHook = "${pkg.env.shellHook}\nexport IN_WHICH_NIX_SHELL=${name}";
   }
