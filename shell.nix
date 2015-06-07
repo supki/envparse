@@ -6,8 +6,8 @@
   cabal-install = pkgs.haskell.packages.${compiler}.cabal-install;
   env = (import ./default.nix { inherit nixpkgs compiler; }).env;
 in
-  pkgs.stdenv.mkDerivation {
+  pkgs.stdenv.mkDerivation rec {
     name = "envparse";
     buildInputs = [ ghc cabal-install ] ++ env.buildInputs;
-    shellHook = env.shellHook;
+    shellHook = "${env.shellHook}\nexport IN_WHICH_NIX_SHELL=${name}";
   }
