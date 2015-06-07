@@ -3,10 +3,11 @@
   ghc = pkgs.haskell.packages.${compiler}.ghcWithPackages( ps: with ps; [
     hdevtools doctest
   ]);
+  cabal-install = pkgs.haskell.packages.${compiler}.cabal-install;
   env = (import ./default.nix { inherit nixpkgs compiler; }).env;
 in
   pkgs.stdenv.mkDerivation {
     name = "envparse";
-    buildInputs = [ ghc ] ++ env.buildInputs;
+    buildInputs = [ ghc cabal-install ] ++ env.buildInputs;
     shellHook = env.shellHook;
   }
