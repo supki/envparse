@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Env.Help
-  ( helpDoc
+  ( helpInfo
+  , helpDoc
   ) where
 
 import qualified Data.List as List
@@ -13,15 +14,19 @@ import           Env.Free
 import           Env.Parse
 
 
-helpDoc :: Info a -> Parser b -> [Error] -> String
-helpDoc Info { infoHeader, infoDesc, infoFooter } p fs =
-  List.intercalate "\n\n" . catMaybes $
+helpInfo :: Info a -> Parser b -> [Error] -> String
+helpInfo Info { infoHeader, infoDesc, infoFooter } p errors =
+  List.intercalate "\n\n" $ catMaybes
     [ infoHeader
     , fmap (List.intercalate "\n" . splitWords 50) infoDesc
-    , Just "Available environment variables:"
-    , Just (List.intercalate "\n" (helpParserDoc p))
+    , Just (helpDoc p)
     , fmap (List.intercalate "\n" . splitWords 50) infoFooter
-    ] ++ map Just (helpFailuresDoc fs)
+    ] ++ helpErrors errors
+
+-- | A pretty-printed list of recognized environment variables suitable for usage messages.
+helpDoc :: Parser a -> String
+helpDoc p =
+  List.intercalate "\n" ("Available environment variables:\n" : helpParserDoc p)
 
 helpParserDoc :: Parser a -> [String]
 helpParserDoc = concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc v)) . unParser
@@ -39,13 +44,16 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
      where k = length varfName
            t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
 
-helpFailuresDoc :: [Error] -> [String]
-helpFailuresDoc [] = []
-helpFailuresDoc fs = ["Parsing errors:", List.intercalate "\n" (map helpFailureDoc (List.sortBy (comparing varName) fs))]
+helpErrors :: [Error] -> [String]
+helpErrors [] = []
+helpErrors fs =
+  [ "Parsing errors:"
+  , List.intercalate "\n" (map helpError (List.sortBy (comparing varName) fs))
+  ]
 
-helpFailureDoc :: Error -> String
-helpFailureDoc (ParseError n e)  = "  " ++ n ++ " cannot be parsed: " ++ e
-helpFailureDoc (ENoExistError n) = "  " ++ n ++ " is unset"
+helpError :: Error -> String
+helpError (ParseError n e)  = "  " ++ n ++ " cannot be parsed: " ++ e
+helpError (ENoExistError n) = "  " ++ n ++ " is unset"
 
 varName :: Error -> String
 varName (ParseError n _)  = n

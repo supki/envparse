@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,8 +13,13 @@ module Env.Free
   , inspect
   ) where
 
-import Control.Applicative (Applicative(..), Alternative(..))
+#if __GLASGOW_HASKELL__ < 710
+import Control.Applicative (Applicative(..))
+#endif
+import Control.Applicative (Alternative(..))
+#if __GLASGOW_HASKELL__ < 710
 import Data.Monoid (Monoid(..))
+#endif
 
 
 data Alt f a where

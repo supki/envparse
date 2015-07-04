@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 module Env.Val
   ( Val(..)
@@ -6,7 +7,10 @@ module Env.Val
   ) where
 
 import Control.Applicative
-import Data.Monoid (Monoid(..), (<>))
+#if __GLASGOW_HASKELL__ < 710
+import Data.Monoid (Monoid(..))
+#endif
+import Data.Monoid ((<>))
 
 
 -- | An isomorphic to 'Either' type with the accumulating 'Applicative' instance

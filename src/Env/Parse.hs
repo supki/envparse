@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -32,7 +33,9 @@ module Env.Parse
 import           Control.Applicative
 import           Data.Map (Map)
 import qualified Data.Map as Map
+#if __GLASGOW_HASKELL__ < 710
 import           Data.Monoid (Monoid(..))
+#endif
 import           Data.String (IsString(..))
 
 import           Env.Free

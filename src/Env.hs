@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE Safe #-}
 -- | Here's a simple example of a program that uses @envparse@'s parser:
 --
@@ -64,6 +65,7 @@ module Env
   , Flag
   , HasHelp
   , help
+  , helpDoc
   -- * Re-exports
   -- $re-exports
   , pure, (<$>), (<*>), (*>), (<*), optional
@@ -79,12 +81,15 @@ module Env
 import           Control.Applicative
 import           Control.Monad ((>=>), (<=<))
 import           Data.Foldable (asum)
+#if __GLASGOW_HASKELL__ < 710
 import           Data.Monoid (Monoid(..), (<>))
+#endif
+import           Data.Monoid ((<>))
 import           System.Environment (getEnvironment)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
-import           Env.Help (helpDoc)
+import           Env.Help (helpInfo, helpDoc)
 import           Env.Parse
 
 -- $re-exports
@@ -116,7 +121,7 @@ die m = do IO.hPutStrLn IO.stderr m; exitFailure
 
 -- | Try to parse a pure environment
 parsePure :: Mod Info a -> Parser a -> [(String, String)] -> Either String a
-parsePure (Mod f) p = mapLeft (helpDoc (f defaultInfo) p) . static p
+parsePure (Mod f) p = mapLeft (helpInfo (f defaultInfo) p) . static p
 
 mapLeft :: (a -> b) -> Either a t -> Either b t
 mapLeft f = either (Left . f) Right
