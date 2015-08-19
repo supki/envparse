@@ -82,7 +82,7 @@ import           Control.Applicative
 import           Control.Monad ((>=>), (<=<))
 import           Data.Foldable (asum)
 #if __GLASGOW_HASKELL__ < 710
-import           Data.Monoid (Monoid(..), (<>))
+import           Data.Monoid (Monoid(..))
 #endif
 import           Data.Monoid ((<>))
 import           System.Environment (getEnvironment)

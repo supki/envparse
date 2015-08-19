@@ -1,2 +1,2 @@
 { nixpkgs ? import <nixpkgs> {}, compiler ? "ghc7101" }:
-nixpkgs.pkgs.haskell.packages.${compiler}.callPackage ./envparse.nix {}
+nixpkgs.pkgs.haskell.packages.${compiler}.callPackage ./package.nix {}

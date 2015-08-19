@@ -7,7 +7,6 @@ module Env.Help
 import qualified Data.List as List
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
-import           Data.Monoid ((<>))
 import           Data.Ord (comparing)
 
 import           Env.Free
@@ -74,4 +73,4 @@ splitWords n = go [] 0 . words
   prep acc = [unwords (reverse acc)]
 
 indent :: Int -> String -> String
-indent n s = replicate n ' ' <> s
+indent n s = replicate n ' ' ++ s

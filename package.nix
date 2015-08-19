@@ -1,7 +1,7 @@
 { mkDerivation, base, containers, hspec, stdenv }:
 mkDerivation {
   pname = "envparse";
-  version = "0.2.1";
+  version = "0.2.2";
   src = ./.;
   buildDepends = [ base containers ];
   testDepends = [ base containers hspec ];

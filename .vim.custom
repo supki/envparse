@@ -9,8 +9,6 @@ let g:syntastic_haskell_hdevtools_args = s:hdevtools_options
 	\ , '-O0'
 	\ , '-fdefer-type-errors'
 	\ , '-Wall'
-	\ , '-fno-warn-unused-do-bind'
-	\ , '-fno-warn-type-defaults'
 	\ , '-DTEST'
 	\ , '-optP-include'
 	\ , '-optPdist/build/autogen/cabal_macros.h'

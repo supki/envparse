@@ -13,7 +13,7 @@ import Data.Monoid (Monoid(..))
 import Data.Monoid ((<>))
 
 
--- | An isomorphic to 'Either' type with the accumulating 'Applicative' instance
+-- | A type isomorphic to 'Either' with the accumulating 'Applicative' instance.
 data Val e a
   = Err e
   | Ok  a
