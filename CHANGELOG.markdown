@@ -1,3 +1,8 @@
+0.2.2
+=====
+
+  * Added `helpDoc`, a `Parser` pretty-printer for use in error messages.
+
 0.2.1
 =====
 
