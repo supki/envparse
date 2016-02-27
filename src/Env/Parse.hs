@@ -44,23 +44,27 @@ import           Env.Val
 
 
 -- | Try to parse a pure environment
-parsePure :: Error.AsUnset e => Parser e b -> [(String, String)] -> Either [e] b
+parsePure :: Error.AsUnset e => Parser e b -> [(String, String)] -> Either [(String, e)] b
 parsePure (Parser p) (Map.fromList -> env) =
   toEither (runAlt go p)
  where
   go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v =<< lookupVar v env))
 
-lookupVar :: Error.AsUnset e => VarF e a -> Map String String -> Either [e] String
-lookupVar v = note [Error.unset (varfName v)] . Map.lookup (varfName v)
+lookupVar :: Error.AsUnset e => VarF e a -> Map String String -> Either [(String, e)] String
+lookupVar VarF {varfName} =
+  note [(varfName, Error.unset)] . Map.lookup varfName
 
-readVar :: VarF e a -> String -> Either [e] a
-readVar v = mapLeft (pure . ($ varfName v)) . varfReader v
+readVar :: VarF e a -> String -> Either [(String, e)] a
+readVar VarF {varfName, varfReader} =
+  mapLeft (pure . (\err -> (varfName, err))) . varfReader
 
 note :: a -> Maybe b -> Either a b
-note a = maybe (Left a) Right
+note a =
+  maybe (Left a) Right
 
 mapLeft :: (a -> b) -> Either a t -> Either b t
-mapLeft f = either (Left . f) Right
+mapLeft f =
+  either (Left . f) Right
 
 
 -- | An environment parser
@@ -90,7 +94,7 @@ data VarF e a = VarF
   } deriving (Functor)
 
 -- | An environment variable's value parser. Use @(<=<)@ and @(>=>)@ to combine these
-type Reader e a = String -> Either (String -> e) a
+type Reader e a = String -> Either e a
 
 -- | Parse a particular variable from the environment
 --

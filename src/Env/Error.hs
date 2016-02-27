@@ -7,9 +7,9 @@ module Env.Error
 
 
 data Error
-  = UnsetError String
-  | EmptyError String
-  | InvalidError String String
+  = UnsetError
+  | EmptyError
+  | InvalidError String
     deriving (Show, Eq)
 
 instance AsUnset Error where
@@ -22,10 +22,10 @@ instance AsInvalid Error where
   invalid = InvalidError
 
 class AsUnset e where
-  unset :: String -> e
+  unset :: e
 
 class AsEmpty e where
-  empty :: String -> e
+  empty :: e
 
 class AsInvalid e where
-  invalid :: String -> String -> e
+  invalid :: String -> e

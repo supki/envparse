@@ -14,7 +14,7 @@ import           Env.Parse
 import           Env.Error (Error(..))
 
 
-helpInfo :: Info a -> Parser e b -> [Error] -> String
+helpInfo :: Info a -> Parser e b -> [(String, Error)] -> String
 helpInfo Info { infoHeader, infoDesc, infoFooter } p errors =
   List.intercalate "\n\n" $ catMaybes
     [ infoHeader
@@ -44,22 +44,25 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
      where k = length varfName
            t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
 
-helpErrors :: [Error] -> [String]
+helpErrors :: [(String, Error)] -> [String]
 helpErrors [] = []
 helpErrors fs =
   [ "Parsing errors:"
-  , List.intercalate "\n" (map helpError (List.sortBy (comparing varName) fs))
+  , List.intercalate "\n" (map (uncurry helpError) (List.sortBy (comparing varName) fs))
   ]
 
-helpError :: Error -> String
-helpError (UnsetError n) = "  " ++ n ++ " is unset"
-helpError (EmptyError n) = "  " ++ n ++ " is empty"
-helpError (InvalidError n val) = "  " ++ n ++ " has an invalid value " ++ val
+helpError :: String -> Error -> String
+helpError n err =
+  case err of
+    UnsetError ->
+      "  " ++ n ++ " is unset"
+    EmptyError ->
+      "  " ++ n ++ " is empty"
+    InvalidError val ->
+      "  " ++ n ++ " has an invalid value " ++ val
 
-varName :: Error -> String
-varName (UnsetError n) = n
-varName (EmptyError n) = n
-varName (InvalidError n _) = n
+varName :: (String, Error) -> String
+varName (n, _) = n
 
 splitWords :: Int -> String -> [String]
 splitWords n = go [] 0 . words
