@@ -11,7 +11,7 @@ import           Data.Ord (comparing)
 
 import           Env.Free
 import           Env.Parse
-import           Env.Error (Error(..), Unset(..), Empty(..), Invalid(..))
+import           Env.Error (Error(..))
 
 
 helpInfo :: Info a -> Parser e b -> [Error] -> String
@@ -52,14 +52,14 @@ helpErrors fs =
   ]
 
 helpError :: Error -> String
-helpError (UnsetError (Unset n)) = "  " ++ n ++ " is unset"
-helpError (EmptyError (Empty n)) = "  " ++ n ++ " is empty"
-helpError (InvalidError (Invalid n val)) = "  " ++ n ++ " has an invalid value " ++ val
+helpError (UnsetError n) = "  " ++ n ++ " is unset"
+helpError (EmptyError n) = "  " ++ n ++ " is empty"
+helpError (InvalidError n val) = "  " ++ n ++ " has an invalid value " ++ val
 
 varName :: Error -> String
-varName (UnsetError (Unset n)) = n
-varName (EmptyError (Empty n)) = n
-varName (InvalidError (Invalid n _)) = n
+varName (UnsetError n) = n
+varName (EmptyError n) = n
+varName (InvalidError n _) = n
 
 splitWords :: Int -> String -> [String]
 splitWords n = go [] 0 . words
