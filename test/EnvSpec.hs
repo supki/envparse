@@ -2,13 +2,13 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module EnvSpec (spec) where
 
-import Control.Applicative
-import Control.Monad
-import Prelude hiding (pi)
-import Test.Hspec
-import Text.Read (readMaybe)
+import           Control.Applicative
+import           Control.Monad
+import           Prelude hiding (pi)
+import           Test.Hspec
+import           Text.Read (readMaybe)
 
-import Env
+import           Env
 
 default (Integer, Double, String)
 
@@ -16,8 +16,11 @@ default (Integer, Double, String)
 spec :: Spec
 spec =
   describe "parsing" $ do
-    it "parsing the environment with the noop parser always fails" $
-      p empty `shouldBe` Nothing
+    it "parsing the environment with the noop parser always succeeds" $
+      p (pure ()) `shouldBe` Just ()
+
+    it "parsing the environment with the failing parser always fails" $
+      p Control.Applicative.empty `shouldBe` Nothing
 
     it "looking for the non-existing env var fails" $
       p (var str "xyzzy" mempty) `shouldBe` Nothing
@@ -66,7 +69,7 @@ spec =
 
     context "modifiers" $ do
       it "the latter modifier overwrites the former" $
-        p (var (\_ -> Left "nope") "never" (def 4 <> def 7)) `shouldBe` Just 7
+        p (var (\_ -> Left (unread "nope")) "never" (def 4 <> def 7)) `shouldBe` Just 7
 
       it "‘prefixed’ modifier changes the names of the variables" $
         p (prefixed "spec_" (var str "foo" mempty)) `shouldBe` Just "totally-not-bar"
@@ -77,11 +80,12 @@ spec =
         Just "zygohistomorphic"
 
 
-greaterThan5 :: Reader Int
-greaterThan5 s = note "fail" (do v <- readMaybe s; guard (v > 5); return v)
+greaterThan5 :: AsUnread e => Reader e Int
+greaterThan5 s =
+  note (unread "fail") (do v <- readMaybe s; guard (v > 5); return v)
 
-p :: Parser a -> Maybe a
-p x = hush (parsePure mempty x fancyEnv)
+p :: Parser Error a -> Maybe a
+p x = hush (parsePure x fancyEnv)
 
 fancyEnv :: [(String, String)]
 fancyEnv =
