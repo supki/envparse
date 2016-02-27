@@ -2,13 +2,14 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module EnvSpec (spec) where
 
-import Control.Applicative
-import Control.Monad
-import Prelude hiding (pi)
-import Test.Hspec
-import Text.Read (readMaybe)
+import           Control.Applicative
+import           Control.Monad
+import           Prelude hiding (pi)
+import           Test.Hspec
+import           Text.Read (readMaybe)
 
-import Env
+import           Env
+import qualified Env.Error as Error
 
 default (Integer, Double, String)
 
@@ -66,7 +67,7 @@ spec =
 
     context "modifiers" $ do
       it "the latter modifier overwrites the former" $
-        p (var (\_ -> Left "nope") "never" (def 4 <> def 7)) `shouldBe` Just 7
+        p (var (\_ -> Left (Error.invalid "nope")) "never" (def 4 <> def 7)) `shouldBe` Just 7
 
       it "‘prefixed’ modifier changes the names of the variables" $
         p (prefixed "spec_" (var str "foo" mempty)) `shouldBe` Just "totally-not-bar"
@@ -77,11 +78,12 @@ spec =
         Just "zygohistomorphic"
 
 
-greaterThan5 :: Reader Int
-greaterThan5 s = note "fail" (do v <- readMaybe s; guard (v > 5); return v)
+greaterThan5 :: Error.AsInvalid e => Reader e Int
+greaterThan5 s =
+  note (Error.invalid "fail") (do v <- readMaybe s; guard (v > 5); return v)
 
-p :: Parser a -> Maybe a
-p x = hush (parsePure mempty x fancyEnv)
+p :: Parser Error a -> Maybe a
+p x = hush (parsePure x fancyEnv)
 
 fancyEnv :: [(String, String)]
 fancyEnv =

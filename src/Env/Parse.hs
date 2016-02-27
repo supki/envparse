@@ -1,12 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 module Env.Parse
   ( Parser(..)
   , VarF(..)
-  , static
-  , Error(..)
+  , parsePure
   , Mod(..)
   , Info(..)
   , defaultInfo
@@ -39,20 +39,22 @@ import           Data.Monoid (Monoid(..))
 import           Data.String (IsString(..))
 
 import           Env.Free
+import qualified Env.Error as Error
 import           Env.Val
 
 
-static :: Parser b -> [(String, String)] -> Either [Error] b
-static (Parser p) (Map.fromList -> env) =
+-- | Try to parse a pure environment
+parsePure :: Error.AsUnset e => Parser e b -> [(String, String)] -> Either [e] b
+parsePure (Parser p) (Map.fromList -> env) =
   toEither (runAlt go p)
  where
   go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v =<< lookupVar v env))
 
-lookupVar :: VarF a -> Map String String -> Either [Error] String
-lookupVar v = note [ENoExistError (varfName v)] . Map.lookup (varfName v)
+lookupVar :: Error.AsUnset e => VarF e a -> Map String String -> Either [e] String
+lookupVar v = note [Error.unset (varfName v)] . Map.lookup (varfName v)
 
-readVar :: VarF a -> String -> Either [Error] a
-readVar v = mapLeft (pure . ParseError (varfName v)) . varfReader v
+readVar :: VarF e a -> String -> Either [e] a
+readVar v = mapLeft (pure . ($ varfName v)) . varfReader v
 
 note :: a -> Maybe b -> Either a b
 note a = maybe (Left a) Right
@@ -62,45 +64,40 @@ mapLeft f = either (Left . f) Right
 
 
 -- | An environment parser
-newtype Parser a = Parser { unParser :: Alt VarF a }
+newtype Parser e a = Parser { unParser :: Alt (VarF e) a }
     deriving (Functor)
 
-instance Applicative Parser where
+instance Applicative (Parser e) where
   pure = Parser . pure
   Parser f <*> Parser x = Parser (f <*> x)
 
-instance Alternative Parser where
+instance Alternative (Parser e) where
   empty = Parser empty
   Parser f <|> Parser x = Parser (f <|> x)
 
 -- | The string to prepend to the name of every declared environment variable
-prefixed :: String -> Parser a -> Parser a
+prefixed :: String -> Parser e a -> Parser e a
 prefixed pre =
   Parser . hoistAlt (\v -> v { varfName = pre ++ varfName v }) . unParser
 
 
-data Error
-  = ParseError String String
-  | ENoExistError String
-    deriving (Show, Eq)
-
-data VarF a = VarF
+data VarF e a = VarF
   { varfName    :: String
-  , varfReader  :: Reader a
+  , varfReader  :: Reader e a
   , varfHelp    :: Maybe String
   , varfDef     :: Maybe a
   , varfHelpDef :: Maybe String
   } deriving (Functor)
 
 -- | An environment variable's value parser. Use @(<=<)@ and @(>=>)@ to combine these
-type Reader a = String -> Either String a
+type Reader e a = String -> Either (String -> e) a
 
 -- | Parse a particular variable from the environment
 --
 -- @
 -- >>> var 'str' \"EDITOR\" ('def' \"vim\" <> 'helpDef' show)
 -- @
-var :: Reader a -> String -> Mod Var a -> Parser a
+var :: Reader e a -> String -> Mod Var a -> Parser e a
 var r n (Mod f) = Parser . liftAlt $ VarF
   { varfName    = n
   , varfReader  = r
@@ -116,12 +113,13 @@ var r n (Mod f) = Parser . liftAlt $ VarF
 --
 -- /Note:/ this parser never fails.
 flag
-  :: a -- ^ default value
+  :: forall e a. Error.AsEmpty e
+  => a -- ^ default value
   -> a -- ^ active value
-  -> String -> Mod Flag a -> Parser a
+  -> String -> Mod Flag a -> Parser e a
 flag f t n (Mod g) = Parser . liftAlt $ VarF
   { varfName    = n
-  , varfReader  = Right . either (const f) (const t) . (nonempty :: Reader String)
+  , varfReader  = Right . either (const f) (const t) . (nonempty :: Reader e String)
   , varfHelp    = flagHelp
   , varfDef     = Just f
   , varfHelpDef = Nothing
@@ -132,20 +130,20 @@ flag f t n (Mod g) = Parser . liftAlt $ VarF
 -- | A simple boolean 'flag'
 --
 -- /Note:/ the same caveats apply.
-switch :: String -> Mod Flag Bool -> Parser Bool
+switch :: Error.AsEmpty e => String -> Mod Flag Bool -> Parser e Bool
 switch = flag False True
 
 -- | The trivial reader
-str :: IsString s => Reader s
+str :: IsString s => Reader e s
 str = Right . fromString
 
 -- | The reader that accepts only non-empty strings
-nonempty :: IsString s => Reader s
-nonempty = fmap fromString . go where go [] = Left "a non-empty string is expected"; go xs = Right xs
+nonempty :: (Error.AsEmpty e, IsString s) => Reader e s
+nonempty = fmap fromString . go where go [] = Left Error.empty; go xs = Right xs
 
 -- | The reader that uses the 'Read' instance of the type
-auto :: Read a => Reader a
-auto = \s -> case reads s of [(v, "")] -> Right v; _ -> Left (show s ++ " is an invalid value")
+auto :: (Error.AsInvalid e, Read a) => Reader e a
+auto = \s -> case reads s of [(v, "")] -> Right v; _ -> Left (Error.invalid (show s))
 {-# ANN auto "HLint: ignore Redundant lambda" #-}
 
 

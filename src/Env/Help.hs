@@ -11,9 +11,10 @@ import           Data.Ord (comparing)
 
 import           Env.Free
 import           Env.Parse
+import           Env.Error (Error(..), Unset(..), Empty(..), Invalid(..))
 
 
-helpInfo :: Info a -> Parser b -> [Error] -> String
+helpInfo :: Info a -> Parser e b -> [Error] -> String
 helpInfo Info { infoHeader, infoDesc, infoFooter } p errors =
   List.intercalate "\n\n" $ catMaybes
     [ infoHeader
@@ -23,14 +24,14 @@ helpInfo Info { infoHeader, infoDesc, infoFooter } p errors =
     ] ++ helpErrors errors
 
 -- | A pretty-printed list of recognized environment variables suitable for usage messages.
-helpDoc :: Parser a -> String
+helpDoc :: Parser e a -> String
 helpDoc p =
   List.intercalate "\n" ("Available environment variables:\n" : helpParserDoc p)
 
-helpParserDoc :: Parser a -> [String]
+helpParserDoc :: Parser e a -> [String]
 helpParserDoc = concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc v)) . unParser
 
-helpVarfDoc :: VarF a -> [String]
+helpVarfDoc :: VarF e a -> [String]
 helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
   case varfHelp of
     Nothing -> [indent 2 varfName]
@@ -51,12 +52,14 @@ helpErrors fs =
   ]
 
 helpError :: Error -> String
-helpError (ParseError n e)  = "  " ++ n ++ " cannot be parsed: " ++ e
-helpError (ENoExistError n) = "  " ++ n ++ " is unset"
+helpError (UnsetError (Unset n)) = "  " ++ n ++ " is unset"
+helpError (EmptyError (Empty n)) = "  " ++ n ++ " is empty"
+helpError (InvalidError (Invalid n val)) = "  " ++ n ++ " has an invalid value " ++ val
 
 varName :: Error -> String
-varName (ParseError n _)  = n
-varName (ENoExistError n) = n
+varName (UnsetError (Unset n)) = n
+varName (EmptyError (Empty n)) = n
+varName (InvalidError (Invalid n _)) = n
 
 splitWords :: Int -> String -> [String]
 splitWords n = go [] 0 . words

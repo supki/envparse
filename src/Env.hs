@@ -66,6 +66,8 @@ module Env
   , HasHelp
   , help
   , helpDoc
+  , Error
+  , AsUnset
   -- * Re-exports
   -- $re-exports
   , pure, (<$>), (<*>), (*>), (<*), optional
@@ -82,15 +84,17 @@ import           Control.Applicative
 import           Control.Monad ((>=>), (<=<))
 import           Data.Foldable (asum)
 #if __GLASGOW_HASKELL__ < 710
-import           Data.Monoid (Monoid(..))
-#endif
+import           Data.Monoid (Monoid(..), (<>))
+#else
 import           Data.Monoid ((<>))
+#endif
 import           System.Environment (getEnvironment)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
 import           Env.Help (helpInfo, helpDoc)
 import           Env.Parse
+import           Env.Error (Error, AsUnset)
 
 -- $re-exports
 -- External functions that may be useful to the consumer of the library
@@ -107,24 +111,17 @@ import           Env.Parse
 -- @
 -- >>> parse ('header' \"env-parse 0.2.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
-parse :: Mod Info a -> Parser a -> IO a
+parse :: Mod Info a -> Parser Error a -> IO a
 parse m = fmap (either (\_ -> error "absurd") id) . parseOr die m
 
 -- | Try to parse the environment
 --
 -- Use this if simply dying on failure (the behavior of 'parse') is inadequate for your needs.
-parseOr :: (String -> IO a) -> Mod Info b -> Parser b -> IO (Either a b)
-parseOr f m p = traverseLeft f . parsePure m p =<< getEnvironment
+parseOr :: (String -> IO a) -> Mod Info b -> Parser Error b -> IO (Either a b)
+parseOr f (Mod g) p = traverseLeft (f . helpInfo (g defaultInfo) p) . parsePure p =<< getEnvironment
 
 die :: String -> IO a
 die m = do IO.hPutStrLn IO.stderr m; exitFailure
-
--- | Try to parse a pure environment
-parsePure :: Mod Info a -> Parser a -> [(String, String)] -> Either String a
-parsePure (Mod f) p = mapLeft (helpInfo (f defaultInfo) p) . static p
-
-mapLeft :: (a -> b) -> Either a t -> Either b t
-mapLeft f = either (Left . f) Right
 
 traverseLeft :: Applicative f => (a -> f b) -> Either a t -> f (Either b t)
 traverseLeft f = either (fmap Left . f) (pure . Right)
