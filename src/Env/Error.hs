@@ -12,20 +12,35 @@ data Error
   | InvalidError String
     deriving (Show, Eq)
 
-instance AsUnset Error where
-  unset = UnsetError
-
-instance AsEmpty Error where
-  empty = EmptyError
-
-instance AsInvalid Error where
-  invalid = InvalidError
-
 class AsUnset e where
   unset :: e
+  tryUnset :: e -> Maybe ()
+
+instance AsUnset Error where
+  unset = UnsetError
+  tryUnset err =
+    case err of
+      UnsetError -> Just ()
+      _ -> Nothing
 
 class AsEmpty e where
   empty :: e
+  tryEmpty :: e -> Maybe ()
+
+instance AsEmpty Error where
+  empty = EmptyError
+  tryEmpty err =
+    case err of
+      EmptyError -> Just ()
+      _ -> Nothing
 
 class AsInvalid e where
   invalid :: String -> e
+  tryInvalid :: e -> Maybe String
+
+instance AsInvalid Error where
+  invalid = InvalidError
+  tryInvalid err =
+    case err of
+      InvalidError msg -> Just msg
+      _ -> Nothing

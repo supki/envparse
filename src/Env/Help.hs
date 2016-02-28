@@ -1,29 +1,37 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Env.Help
   ( helpInfo
+  , helpInfoWith
   , helpDoc
+  , ErrorHandler
+  , handleError
   ) where
 
+import           Data.Foldable (asum)
 import qualified Data.List as List
 import qualified Data.Map as Map
-import           Data.Maybe (catMaybes)
+import           Data.Maybe (catMaybes, mapMaybe)
 import           Data.Ord (comparing)
 
 import           Env.Free
 import           Env.Parse
 import           Env.Error (Error(..))
+import qualified Env.Error as Error
 
 
-helpInfo :: Info a -> Parser e b -> [(String, Error)] -> String
-helpInfo Info { infoHeader, infoDesc, infoFooter } p errors =
+helpInfo :: Info a -> Parser Error b -> [(String, Error)] -> String
+helpInfo = helpInfoWith handleError
+
+helpInfoWith :: ErrorHandler e -> Info a -> Parser e b -> [(String, e)] -> String
+helpInfoWith handler Info { infoHeader, infoDesc, infoFooter } p errors =
   List.intercalate "\n\n" $ catMaybes
     [ infoHeader
     , fmap (List.intercalate "\n" . splitWords 50) infoDesc
     , Just (helpDoc p)
     , fmap (List.intercalate "\n" . splitWords 50) infoFooter
-    ] ++ helpErrors errors
+    ] ++ helpErrors handler errors
 
--- | A pretty-printed list of recognized environment variables suitable for usage messages.
+-- | A pretty-printed list of recognized environment variables suitable for usage messages
 helpDoc :: Parser e a -> String
 helpDoc p =
   List.intercalate "\n" ("Available environment variables:\n" : helpParserDoc p)
@@ -44,26 +52,6 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
      where k = length varfName
            t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
 
-helpErrors :: [(String, Error)] -> [String]
-helpErrors [] = []
-helpErrors fs =
-  [ "Parsing errors:"
-  , List.intercalate "\n" (map (uncurry helpError) (List.sortBy (comparing varName) fs))
-  ]
-
-helpError :: String -> Error -> String
-helpError n err =
-  case err of
-    UnsetError ->
-      "  " ++ n ++ " is unset"
-    EmptyError ->
-      "  " ++ n ++ " is empty"
-    InvalidError val ->
-      "  " ++ n ++ " has an invalid value " ++ val
-
-varName :: (String, Error) -> String
-varName (n, _) = n
-
 splitWords :: Int -> String -> [String]
 splitWords n = go [] 0 . words
  where
@@ -80,3 +68,32 @@ splitWords n = go [] 0 . words
 
 indent :: Int -> String -> String
 indent n s = replicate n ' ' ++ s
+
+-- | Given a variable name and an error value, try to produce a useful error message
+type ErrorHandler e = String -> e -> Maybe String
+
+helpErrors :: ErrorHandler e -> [(String, e)] -> [String]
+helpErrors _       [] = []
+helpErrors handler fs =
+  [ "Parsing errors:"
+  , List.intercalate "\n" (mapMaybe (uncurry handler) (List.sortBy (comparing varName) fs))
+  ]
+
+handleError :: (Error.AsUnset e, Error.AsEmpty e, Error.AsInvalid e) => ErrorHandler e
+handleError name err =
+  asum [handleUnsetError name err, handleEmptyError name err, handleInvalidError name err]
+
+handleUnsetError :: Error.AsUnset e => ErrorHandler e
+handleUnsetError name =
+  fmap (\() -> indent 2 (name ++ " is unset")) . Error.tryUnset
+
+handleEmptyError :: Error.AsEmpty e => ErrorHandler e
+handleEmptyError name =
+  fmap (\() -> indent 2 (name ++ " is empty")) . Error.tryEmpty
+
+handleInvalidError :: Error.AsInvalid e => ErrorHandler e
+handleInvalidError name =
+  fmap (\val -> indent 2 (name ++ " has the invalid value " ++ val)) . Error.tryInvalid
+
+varName :: (String, e) -> String
+varName (n, _) = n

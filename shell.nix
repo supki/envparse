@@ -8,9 +8,9 @@
 in
   pkgs.stdenv.mkDerivation rec {
     name = pkg.pname;
-    buildInputs = [ ghc cabal-install ] ++ pkg.env.buildInputs;
+    buildInputs = [ ghc cabal-install pkgs.moreutils ] ++ pkg.env.buildInputs;
     shellHook = ''
       ${pkg.env.shellHook}
-      cabal configure --package-db=$NIX_GHC_LIBDIR/package.conf.d --enable-tests
+      chronic cabal configure --package-db=$NIX_GHC_LIBDIR/package.conf.d --enable-tests
     '';
   }
