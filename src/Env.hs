@@ -111,7 +111,7 @@ import           Env.Error (Error, AsUnset)
 -- what you want them to do
 
 -- $custom-errors
--- A slightly generalized parsing functions for when the consumer of the library
+-- Generalized parsing functions for when the consumer of the library
 -- wants to use custom errors
 
 -- | Parse the environment or die
