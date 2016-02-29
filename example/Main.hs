@@ -18,7 +18,7 @@ data Hello = Hello { name :: String, quiet :: Bool }
 
 main :: IO ()
 main = do
-  Hello { name, quiet } <- hello
+  Hello {name, quiet} <- hello
   unless quiet $
     putStrLn ("Hello, " ++ name ++ "!")
 
