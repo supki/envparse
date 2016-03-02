@@ -2,58 +2,51 @@
 -- | Greetings for $NAMES
 --
 -- @
--- % NAMES=foo runhaskell -isrc example/Main.hs
+-- % NAME=a5579150 COUNT=0 runhaskell -isrc example/Main.hs
 -- ...
--- NAMES should have between 3 and 4 names, but there's 2 of them
--- % NAMES=foo,bar,baz runhaskell -isrc example/Main.hs
+-- COUNT must be > 0, but is 0
+-- % NAME=a5579150 COUNT=3 runhaskell -isrc example/Main.hs
 -- Hello, foo!
--- Hello, bar!
--- Hello, baz!
+-- Hello, foo!
+-- Hello, foo!
 module Main (main) where
 
-import           Control.Monad (forM_)
+import           Control.Monad (replicateM_)
 import           Env
 import qualified Env.Error as Error
 import           Text.Printf (printf)
 
 
-newtype Hello = Hello { names :: [String] }
-
+data Hello = Hello { name :: String, count :: Int }
 
 main :: IO ()
 main = do
-  Hello {names} <- hello
-  forM_ names $ \name ->
+  Hello {name, count} <- hello
+  replicateM_ count $
     putStrLn ("Hello, " ++ name ++ "!")
 
 hello :: IO Hello
 hello = Env.parseWith handleCustomError (header "envparse example") $ Hello
-  <$> var (goodEnough <=< sepBy ',' <=< nonempty) "NAMES" (help "Targets for the greeting")
+  <$> var nonempty            "NAME"  (help "Target for the greeting")
+  <*> var (positive <=< auto) "COUNT" (help "How many times to greet?")
 
 handleCustomError :: ErrorHandler CustomError
 handleCustomError name err =
   case err of
-    LengthError l (lmin, lmax) ->
-      Just (printf "  %s should have between %d and %d names, but there's %d of them" name lmin lmax l)
+    NonPositive n ->
+      Just (printf "  %s must be > 0, but is %d" name n)
     _ ->
       handleError name err
 
-goodEnough :: [String] -> Either CustomError [String]
-goodEnough xs
-  | l < lmin || l > lmax =
-    Left (LengthError l range)
+positive :: Int -> Either CustomError Int
+positive n
+  | n <= 0 =
+    Left (NonPositive n)
   | otherwise =
-    pure xs
- where
-  l = length xs
-  range@(lmin, lmax) = (3, 4)
-
-sepBy :: Char -> Reader e [String]
-sepBy sep =
-  pure . splitOn sep
+    pure n
 
 data CustomError
-  = LengthError Int (Int, Int)
+  = NonPositive Int
   | EnvError Error
 
 -- * Boilerplate
@@ -81,12 +74,3 @@ instance Error.AsInvalid CustomError where
     case err of
       EnvError err' -> Error.tryInvalid err'
       _ -> Nothing
-
-splitOn :: Eq a => a -> [a] -> [[a]]
-splitOn sep = go
- where
-  go xs =
-    case break (== sep) xs of
-      ([], _) -> []
-      (ys, []) -> ys : []
-      (ys, _ : zs) -> ys : go zs
