@@ -2,8 +2,7 @@
 module Env.Help
   ( helpInfo
   , helpDoc
-  , InfoMod
-  , Info(..)
+  , Info
   , ErrorHandler
   , defaultInfo
   , defaultErrorHandler
@@ -79,9 +78,6 @@ helpErrors handler fs =
   , List.intercalate "\n" (mapMaybe (uncurry handler) (List.sortBy (comparing varName) fs))
   ]
 
--- | This represents a modification of the properties of a particular 'Info'.
-type InfoMod a b = Info a -> Info b
-
 -- | Parser's metadata
 data Info e = Info
   { infoHeader      :: Maybe String
@@ -102,19 +98,19 @@ defaultInfo = Info
   }
 
 -- | A help text header (it usually includes the application's name and version)
-header :: String -> InfoMod e e
+header :: String -> Info e -> Info e
 header h i = i {infoHeader=Just h}
 
 -- | A short description
-desc :: String -> InfoMod e e
+desc :: String -> Info e -> Info e
 desc h i = i {infoDesc=Just h}
 
 -- | A help text footer (it usually includes examples)
-footer :: String -> InfoMod e e
+footer :: String -> Info e -> Info e
 footer h i = i {infoFooter=Just h}
 
 -- | An error handler
-handleError :: ErrorHandler e -> InfoMod x e
+handleError :: ErrorHandler e -> Info x -> Info e
 handleError handler i = i {infoHandleError=handler}
 
 defaultErrorHandler :: (Error.AsUnset e, Error.AsEmpty e, Error.AsInvalid e) => ErrorHandler e

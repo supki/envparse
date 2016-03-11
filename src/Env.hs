@@ -48,7 +48,6 @@ module Env
   , Parser
   , Mod
   , Help.Info
-  , Help.InfoMod
   , Help.header
   , Help.desc
   , Help.footer
@@ -114,14 +113,14 @@ import           Env.Error (Error, AsUnset)
 -- @
 -- >>> parse ('header' \"env-parse 0.2.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
-parse :: AsUnset e => Help.InfoMod Error e -> Parser e a -> IO a
+parse :: AsUnset e => (Help.Info Error -> Help.Info e) -> Parser e a -> IO a
 parse m =
   fmap (either (\_ -> error "absurd") id) . parseOr die m
 
 -- | Try to parse the environment
 --
 -- Use this if simply dying on failure (the behavior of 'parse') is inadequate for your needs.
-parseOr :: AsUnset e => (String -> IO a) -> Help.InfoMod Error e -> Parser e b -> IO (Either a b)
+parseOr :: AsUnset e => (String -> IO a) -> (Help.Info Error -> Help.Info e) -> Parser e b -> IO (Either a b)
 parseOr f g p =
   traverseLeft (f . Help.helpInfo (g Help.defaultInfo) p) . parsePure p =<< getEnvironment
 
