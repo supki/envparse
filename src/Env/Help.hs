@@ -2,7 +2,7 @@
 module Env.Help
   ( helpInfo
   , helpDoc
-  , Mod(..)
+  , InfoMod
   , Info(..)
   , ErrorHandler
   , defaultInfo
@@ -13,13 +13,11 @@ module Env.Help
   , handleError
   ) where
 
-import           Control.Category (Category(..))
 import           Data.Foldable (asum)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes, mapMaybe)
 import           Data.Ord (comparing)
-import           Prelude hiding ((.), id)
 
 import           Env.Error (Error)
 import qualified Env.Error as Error
@@ -81,13 +79,8 @@ helpErrors handler fs =
   , List.intercalate "\n" (mapMaybe (uncurry handler) (List.sortBy (comparing varName) fs))
   ]
 
--- | This represents a modification of the properties of a particular 'Parser'.
--- Combine them using the 'Monoid' instance.
-newtype Mod t a b = Mod (t a -> t b)
-
-instance Category (Mod t) where
-  id = Mod id
-  Mod f . Mod g = Mod (f . g)
+-- | This represents a modification of the properties of a particular 'Info'.
+type InfoMod a b = Info a -> Info b
 
 -- | Parser's metadata
 data Info e = Info
@@ -109,20 +102,20 @@ defaultInfo = Info
   }
 
 -- | A help text header (it usually includes the application's name and version)
-header :: String -> Mod Info e e
-header h = Mod (\i -> i { infoHeader = Just h })
+header :: String -> InfoMod e e
+header h i = i {infoHeader=Just h}
 
 -- | A short description
-desc :: String -> Mod Info e e
-desc h = Mod (\i -> i { infoDesc = Just h })
+desc :: String -> InfoMod e e
+desc h i = i {infoDesc=Just h}
 
 -- | A help text footer (it usually includes examples)
-footer :: String -> Mod Info e e
-footer h = Mod (\i -> i { infoFooter = Just h })
+footer :: String -> InfoMod e e
+footer h i = i {infoFooter=Just h}
 
 -- | An error handler
-handleError :: ErrorHandler e -> Mod Info x e
-handleError handler = Mod (\i -> i { infoHandleError = handler })
+handleError :: ErrorHandler e -> InfoMod x e
+handleError handler i = i {infoHandleError=handler}
 
 defaultErrorHandler :: (Error.AsUnset e, Error.AsEmpty e, Error.AsInvalid e) => ErrorHandler e
 defaultErrorHandler name err =

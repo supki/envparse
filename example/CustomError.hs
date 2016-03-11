@@ -11,11 +11,9 @@
 -- Hello, foo!
 module Main (main) where
 
-import           Control.Category (Category(..))
 import           Control.Monad (replicateM_)
 import           Env
 import qualified Env.Error as Error
-import           Prelude hiding ((.), id)
 import           Text.Printf (printf)
 
 
