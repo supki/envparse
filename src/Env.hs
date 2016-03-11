@@ -47,10 +47,13 @@ module Env
   , parseOr
   , Parser
   , Mod
-  , Info
-  , header
-  , desc
-  , footer
+  , Help.Info
+  , Help.header
+  , Help.desc
+  , Help.footer
+  , Help.handleError
+  , Help.ErrorHandler
+  , Help.defaultErrorHandler
   , prefixed
   , var
   , Var
@@ -65,7 +68,7 @@ module Env
   , Flag
   , HasHelp
   , help
-  , helpDoc
+  , Help.helpDoc
   , Error
   , AsUnset
   -- * Re-exports
@@ -75,13 +78,6 @@ module Env
   , (<=<), (>=>)
   , (<>), mempty, mconcat
   , asum
-  -- * Custom Errors
-  -- $custom-errors
-  , parseWith
-  , parseWithOr
-  , ErrorHandler
-  , helpInfoWith
-  , handleError
   -- * Testing
   -- $testing
   , parsePure
@@ -99,7 +95,7 @@ import           System.Environment (getEnvironment)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
-import           Env.Help (ErrorHandler, helpDoc, helpInfoWith, handleError)
+import qualified Env.Help as Help
 import           Env.Parse
 import           Env.Error (Error, AsUnset)
 
@@ -110,10 +106,6 @@ import           Env.Error (Error, AsUnset)
 -- Utilities to test—without dabbling in IO—that your parsers do
 -- what you want them to do
 
--- $custom-errors
--- Generalized parsing functions for when the consumer of the library
--- wants to use custom errors
-
 -- | Parse the environment or die
 --
 -- Prints the help text and exits with @EXIT_FAILURE@ on encountering a parse error.
@@ -121,26 +113,16 @@ import           Env.Error (Error, AsUnset)
 -- @
 -- >>> parse ('header' \"env-parse 0.2.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
-parse :: Mod Info a -> Parser Error a -> IO a
-parse =
-  parseWith handleError
+parse :: AsUnset e => Help.Mod Help.Info Error e -> Parser e a -> IO a
+parse m =
+  fmap (either (\_ -> error "absurd") id) . parseOr die m
 
 -- | Try to parse the environment
 --
 -- Use this if simply dying on failure (the behavior of 'parse') is inadequate for your needs.
-parseOr :: (String -> IO a) -> Mod Info b -> Parser Error b -> IO (Either a b)
-parseOr =
-  parseWithOr handleError
-
--- | Parse the environment handling custom errors or die
-parseWith :: AsUnset e => ErrorHandler e -> Mod Info a -> Parser e a -> IO a
-parseWith handler m =
-  fmap (either (\_ -> error "absurd") id) . parseWithOr handler die m
-
--- | Try to parse the environment handling custom errors
-parseWithOr :: AsUnset e => ErrorHandler e -> (String -> IO a) -> Mod Info b -> Parser e b -> IO (Either a b)
-parseWithOr handler f (Mod g) p =
-  traverseLeft (f . helpInfoWith handler (g defaultInfo) p) . parsePure p =<< getEnvironment
+parseOr :: AsUnset e => (String -> IO a) -> Help.Mod Help.Info Error e -> Parser e b -> IO (Either a b)
+parseOr f (Help.Mod g) p =
+  traverseLeft (f . Help.helpInfo (g Help.defaultInfo) p) . parsePure p =<< getEnvironment
 
 die :: String -> IO a
 die m = do IO.hPutStrLn IO.stderr m; exitFailure

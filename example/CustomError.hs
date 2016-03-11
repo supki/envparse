@@ -11,9 +11,11 @@
 -- Hello, foo!
 module Main (main) where
 
+import           Control.Category (Category(..))
 import           Control.Monad (replicateM_)
 import           Env
 import qualified Env.Error as Error
+import           Prelude hiding ((.), id)
 import           Text.Printf (printf)
 
 
@@ -26,17 +28,17 @@ main = do
     putStrLn ("Hello, " ++ name ++ "!")
 
 hello :: IO Hello
-hello = Env.parseWith handleCustomError (header "envparse example") $ Hello
+hello = Env.parse (header "envparse example" . handleError customErrorHandler) $ Hello
   <$> var nonempty            "NAME"  (help "Target for the greeting")
   <*> var (positive <=< auto) "COUNT" (help "How many times to greet?")
 
-handleCustomError :: ErrorHandler CustomError
-handleCustomError name err =
+customErrorHandler :: ErrorHandler CustomError
+customErrorHandler name err =
   case err of
     NonPositive n ->
       Just (printf "  %s must be > 0, but is %d" name n)
     _ ->
-      handleError name err
+      defaultErrorHandler name err
 
 positive :: Int -> Either CustomError Int
 positive n

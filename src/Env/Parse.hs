@@ -8,11 +8,6 @@ module Env.Parse
   , VarF(..)
   , parsePure
   , Mod(..)
-  , Info(..)
-  , defaultInfo
-  , header
-  , desc
-  , footer
   , prefixed
   , var
   , Var(..)
@@ -159,32 +154,6 @@ instance Monoid (Mod t a) where
   mempty = Mod id
   mappend (Mod f) (Mod g) = Mod (g . f)
 
-
--- | Parser's metadata
-data Info a = Info
-  { infoHeader   :: Maybe String
-  , infoDesc     :: Maybe String
-  , infoFooter   :: Maybe String
-  }
-
-defaultInfo :: Info a
-defaultInfo = Info
-  { infoHeader   = Nothing
-  , infoDesc     = Nothing
-  , infoFooter   = Nothing
-  }
-
--- | A help text header (it usually includes an application name and version)
-header :: String -> Mod Info a
-header h = Mod (\i -> i { infoHeader = Just h })
-
--- | A short program description
-desc :: String -> Mod Info a
-desc h = Mod (\i -> i { infoDesc = Just h })
-
--- | A help text footer (it usually includes examples)
-footer :: String -> Mod Info a
-footer h = Mod (\i -> i { infoFooter = Just h })
 
 
 -- | Environment variable metadata
