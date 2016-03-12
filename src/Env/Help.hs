@@ -97,15 +97,15 @@ defaultInfo = Info
   , infoHandleError = defaultErrorHandler
   }
 
--- | A help text header (it usually includes the application's name and version)
+-- | Set the help text header (it usually includes the application's name and version)
 header :: String -> Info e -> Info e
 header h i = i {infoHeader=Just h}
 
--- | A short description
+-- | Set the short description
 desc :: String -> Info e -> Info e
 desc h i = i {infoDesc=Just h}
 
--- | A help text footer (it usually includes examples)
+-- | Set the help text footer (it usually includes examples)
 footer :: String -> Info e -> Info e
 footer h i = i {infoFooter=Just h}
 
@@ -113,6 +113,7 @@ footer h i = i {infoFooter=Just h}
 handleError :: ErrorHandler e -> Info x -> Info e
 handleError handler i = i {infoHandleError=handler}
 
+-- | The default error handler
 defaultErrorHandler :: (Error.AsUnset e, Error.AsEmpty e, Error.AsUnread e) => ErrorHandler e
 defaultErrorHandler name err =
   asum [handleUnsetError name err, handleEmptyError name err, handleUnreadError name err]
