@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NamedFieldPuns #-}
 -- | Greetings for $NAME
 --
@@ -9,6 +10,9 @@
 -- @
 module Main (main) where
 
+#if __GLASGOW_HASKELL__ < 710
+import Control.Applicative ((<$>), (<*>))
+#endif
 import Control.Monad (unless)
 import Env
 

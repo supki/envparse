@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE NamedFieldPuns #-}
 -- | Greetings for $NAMES
 --
@@ -11,9 +12,11 @@
 -- Hello, foo!
 module Main (main) where
 
+#if __GLASGOW_HASKELL__ < 710
+import           Control.Applicative ((<$>), (<*>))
+#endif
 import           Control.Monad (replicateM_)
 import           Env
-import qualified Env.Error as Error
 import           Text.Printf (printf)
 
 
@@ -43,7 +46,7 @@ positive n
   | n <= 0 =
     Left (NonPositive n)
   | otherwise =
-    pure n
+    return n
 
 data CustomError
   = NonPositive Int
@@ -53,24 +56,24 @@ data CustomError
 
 instance AsUnset CustomError where
   unset =
-    EnvError Error.unset
+    EnvError unset
   tryUnset err =
     case err of
-      EnvError err' -> Error.tryUnset err'
+      EnvError err' -> tryUnset err'
       _ -> Nothing
 
-instance Error.AsEmpty CustomError where
+instance AsEmpty CustomError where
   empty =
-    EnvError Error.empty
+    EnvError empty
   tryEmpty err =
     case err of
-      EnvError err' -> Error.tryEmpty err'
+      EnvError err' -> tryEmpty err'
       _ -> Nothing
 
-instance Error.AsUnread CustomError where
+instance AsUnread CustomError where
   unread =
-    EnvError . Error.unread
+    EnvError . unread
   tryUnread err =
     case err of
-      EnvError err' -> Error.tryUnread err'
+      EnvError err' -> tryUnread err'
       _ -> Nothing

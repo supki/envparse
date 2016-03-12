@@ -1,9 +1,13 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module EnvSpec (spec) where
 
 import           Control.Applicative
 import           Control.Monad
+#if __GLASGOW_HASKELL__ < 710
+import           Data.Monoid (mempty)
+#endif
 import           Prelude hiding (pi)
 import           Test.Hspec
 import           Text.Read (readMaybe)
