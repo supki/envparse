@@ -67,10 +67,10 @@ instance Error.AsEmpty CustomError where
       EnvError err' -> Error.tryEmpty err'
       _ -> Nothing
 
-instance Error.AsInvalid CustomError where
-  invalid =
-    EnvError . Error.invalid
-  tryInvalid err =
+instance Error.AsUnread CustomError where
+  unread =
+    EnvError . Error.unread
+  tryUnread err =
     case err of
-      EnvError err' -> Error.tryInvalid err'
+      EnvError err' -> Error.tryUnread err'
       _ -> Nothing
