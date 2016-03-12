@@ -2,14 +2,14 @@ module Env.Error
   ( Error(..)
   , AsUnset(..)
   , AsEmpty(..)
-  , AsInvalid(..)
+  , AsUnread(..)
   ) where
 
 
 data Error
   = UnsetError
   | EmptyError
-  | InvalidError String
+  | UnreadError String
     deriving (Show, Eq)
 
 class AsUnset e where
@@ -34,13 +34,13 @@ instance AsEmpty Error where
       EmptyError -> Just ()
       _ -> Nothing
 
-class AsInvalid e where
-  invalid :: String -> e
-  tryInvalid :: e -> Maybe String
+class AsUnread e where
+  unread :: String -> e
+  tryUnread :: e -> Maybe String
 
-instance AsInvalid Error where
-  invalid = InvalidError
-  tryInvalid err =
+instance AsUnread Error where
+  unread = UnreadError
+  tryUnread err =
     case err of
-      InvalidError msg -> Just msg
+      UnreadError msg -> Just msg
       _ -> Nothing

@@ -113,9 +113,9 @@ footer h i = i {infoFooter=Just h}
 handleError :: ErrorHandler e -> Info x -> Info e
 handleError handler i = i {infoHandleError=handler}
 
-defaultErrorHandler :: (Error.AsUnset e, Error.AsEmpty e, Error.AsInvalid e) => ErrorHandler e
+defaultErrorHandler :: (Error.AsUnset e, Error.AsEmpty e, Error.AsUnread e) => ErrorHandler e
 defaultErrorHandler name err =
-  asum [handleUnsetError name err, handleEmptyError name err, handleInvalidError name err]
+  asum [handleUnsetError name err, handleEmptyError name err, handleUnreadError name err]
 
 handleUnsetError :: Error.AsUnset e => ErrorHandler e
 handleUnsetError name =
@@ -125,9 +125,9 @@ handleEmptyError :: Error.AsEmpty e => ErrorHandler e
 handleEmptyError name =
   fmap (\() -> indent 2 (name ++ " is empty")) . Error.tryEmpty
 
-handleInvalidError :: Error.AsInvalid e => ErrorHandler e
-handleInvalidError name =
-  fmap (\val -> indent 2 (name ++ " has the invalid value " ++ val)) . Error.tryInvalid
+handleUnreadError :: Error.AsUnread e => ErrorHandler e
+handleUnreadError name =
+  fmap (\val -> indent 2 (name ++ " has value " ++ val ++ " that cannot be parsed")) . Error.tryUnread
 
 varName :: (String, e) -> String
 varName (n, _) = n

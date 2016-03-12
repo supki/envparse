@@ -67,7 +67,7 @@ spec =
 
     context "modifiers" $ do
       it "the latter modifier overwrites the former" $
-        p (var (\_ -> Left (Error.invalid "nope")) "never" (def 4 <> def 7)) `shouldBe` Just 7
+        p (var (\_ -> Left (Error.unread "nope")) "never" (def 4 <> def 7)) `shouldBe` Just 7
 
       it "‘prefixed’ modifier changes the names of the variables" $
         p (prefixed "spec_" (var str "foo" mempty)) `shouldBe` Just "totally-not-bar"
@@ -78,9 +78,9 @@ spec =
         Just "zygohistomorphic"
 
 
-greaterThan5 :: Error.AsInvalid e => Reader e Int
+greaterThan5 :: Error.AsUnread e => Reader e Int
 greaterThan5 s =
-  note (Error.invalid "fail") (do v <- readMaybe s; guard (v > 5); return v)
+  note (Error.unread "fail") (do v <- readMaybe s; guard (v > 5); return v)
 
 p :: Parser Error a -> Maybe a
 p x = hush (parsePure x fancyEnv)

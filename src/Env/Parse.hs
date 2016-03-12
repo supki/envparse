@@ -26,6 +26,7 @@ module Env.Parse
   ) where
 
 import           Control.Applicative
+import           Control.Monad ((<=<))
 import           Data.Map (Map)
 import qualified Data.Map as Map
 #if __GLASGOW_HASKELL__ < 710
@@ -39,23 +40,15 @@ import           Env.Val
 
 
 -- | Try to parse a pure environment
-parsePure :: Error.AsUnset e => Parser e b -> [(String, String)] -> Either [(String, e)] b
+parsePure :: Parser e b -> [(String, String)] -> Either [(String, e)] b
 parsePure (Parser p) (Map.fromList -> env) =
   toEither (runAlt go p)
  where
-  go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v =<< lookupVar v env))
+  go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v env))
 
-lookupVar :: Error.AsUnset e => VarF e a -> Map String String -> Either [(String, e)] String
-lookupVar VarF {varfName} =
-  note [(varfName, Error.unset)] . Map.lookup varfName
-
-readVar :: VarF e a -> String -> Either [(String, e)] a
+readVar :: VarF e a -> Map String String -> Either [(String, e)] a
 readVar VarF {varfName, varfReader} =
-  mapLeft (pure . (\err -> (varfName, err))) . varfReader
-
-note :: a -> Maybe b -> Either a b
-note a =
-  maybe (Left a) Right
+  mapLeft (pure . (\err -> (varfName, err))) . varfReader varfName
 
 mapLeft :: (a -> b) -> Either a t -> Either b t
 mapLeft f =
@@ -82,7 +75,7 @@ prefixed pre =
 
 data VarF e a = VarF
   { varfName    :: String
-  , varfReader  :: Reader e a
+  , varfReader  :: String -> Map String String -> Either e a
   , varfHelp    :: Maybe String
   , varfDef     :: Maybe a
   , varfHelpDef :: Maybe String
@@ -91,15 +84,19 @@ data VarF e a = VarF
 -- | An environment variable's value parser. Use @(<=<)@ and @(>=>)@ to combine these
 type Reader e a = String -> Either e a
 
+lookupVar :: Error.AsUnset e => String -> Map String String -> Either e String
+lookupVar name =
+  maybe (Left Error.unset) Right . Map.lookup name
+
 -- | Parse a particular variable from the environment
 --
 -- @
 -- >>> var 'str' \"EDITOR\" ('def' \"vim\" <> 'helpDef' show)
 -- @
-var :: Reader e a -> String -> Mod Var a -> Parser e a
+var :: Error.AsUnset e => Reader e a -> String -> Mod Var a -> Parser e a
 var r n (Mod f) = Parser . liftAlt $ VarF
   { varfName    = n
-  , varfReader  = r
+  , varfReader  = \name -> r <=< lookupVar name
   , varfHelp    = varHelp
   , varfDef     = varDef
   , varfHelpDef = varHelpDef <*> varDef
@@ -112,13 +109,13 @@ var r n (Mod f) = Parser . liftAlt $ VarF
 --
 -- /Note:/ this parser never fails.
 flag
-  :: forall e a. Error.AsEmpty e
+  :: forall e a. (Error.AsUnset e, Error.AsEmpty e)
   => a -- ^ default value
   -> a -- ^ active value
   -> String -> Mod Flag a -> Parser e a
 flag f t n (Mod g) = Parser . liftAlt $ VarF
   { varfName    = n
-  , varfReader  = Right . either (const f) (const t) . (nonempty :: Reader e String)
+  , varfReader  = \name -> Right . either (const f) (const t) . (nonempty :: Reader e String) <=< lookupVar name
   , varfHelp    = flagHelp
   , varfDef     = Just f
   , varfHelpDef = Nothing
@@ -129,7 +126,7 @@ flag f t n (Mod g) = Parser . liftAlt $ VarF
 -- | A simple boolean 'flag'
 --
 -- /Note:/ the same caveats apply.
-switch :: Error.AsEmpty e => String -> Mod Flag Bool -> Parser e Bool
+switch :: (Error.AsUnset e, Error.AsEmpty e) => String -> Mod Flag Bool -> Parser e Bool
 switch = flag False True
 
 -- | The trivial reader
@@ -141,8 +138,8 @@ nonempty :: (Error.AsEmpty e, IsString s) => Reader e s
 nonempty = fmap fromString . go where go [] = Left Error.empty; go xs = Right xs
 
 -- | The reader that uses the 'Read' instance of the type
-auto :: (Error.AsInvalid e, Read a) => Reader e a
-auto = \s -> case reads s of [(v, "")] -> Right v; _ -> Left (Error.invalid (show s))
+auto :: (Error.AsUnread e, Read a) => Reader e a
+auto = \s -> case reads s of [(v, "")] -> Right v; _ -> Left (Error.unread (show s))
 {-# ANN auto "HLint: ignore Redundant lambda" #-}
 
 
