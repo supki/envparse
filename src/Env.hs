@@ -69,15 +69,13 @@ module Env
   , HasHelp
   , help
   , Help.helpDoc
-  , Error
-  , AsUnset
+  , Error(..)
+  , AsUnset(..)
+  , Error.AsEmpty(..)
+  , Error.AsUnread(..)
   -- * Re-exports
   -- $re-exports
-  , pure, (<$>), (<*>), (*>), (<*), optional
-  , empty, (<|>)
-  , (<=<), (>=>)
-  , (<>), mempty, mconcat
-  , asum
+  , optional, (<=<), (>=>), (<>), asum
   -- * Testing
   -- $testing
   , parsePure
@@ -98,6 +96,7 @@ import qualified System.IO as IO
 import qualified Env.Help as Help
 import           Env.Parse
 import           Env.Error (Error, AsUnset)
+import qualified Env.Error as Error
 
 -- $re-exports
 -- External functions that may be useful to the consumer of the library

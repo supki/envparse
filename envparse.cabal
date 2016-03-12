@@ -77,8 +77,8 @@ library
     src
   exposed-modules:
     Env
-    Env.Error
   other-modules:
+    Env.Error
     Env.Free
     Env.Help
     Env.Parse

@@ -9,7 +9,6 @@ import           Test.Hspec
 import           Text.Read (readMaybe)
 
 import           Env
-import qualified Env.Error as Error
 
 default (Integer, Double, String)
 
@@ -17,8 +16,11 @@ default (Integer, Double, String)
 spec :: Spec
 spec =
   describe "parsing" $ do
-    it "parsing the environment with the noop parser always fails" $
-      p empty `shouldBe` Nothing
+    it "parsing the environment with the noop parser always succeeds" $
+      p (pure ()) `shouldBe` Just ()
+
+    it "parsing the environment with the failing parser always fails" $
+      p Control.Applicative.empty `shouldBe` Nothing
 
     it "looking for the non-existing env var fails" $
       p (var str "xyzzy" mempty) `shouldBe` Nothing
@@ -67,7 +69,7 @@ spec =
 
     context "modifiers" $ do
       it "the latter modifier overwrites the former" $
-        p (var (\_ -> Left (Error.unread "nope")) "never" (def 4 <> def 7)) `shouldBe` Just 7
+        p (var (\_ -> Left (unread "nope")) "never" (def 4 <> def 7)) `shouldBe` Just 7
 
       it "‘prefixed’ modifier changes the names of the variables" $
         p (prefixed "spec_" (var str "foo" mempty)) `shouldBe` Just "totally-not-bar"
@@ -78,9 +80,9 @@ spec =
         Just "zygohistomorphic"
 
 
-greaterThan5 :: Error.AsUnread e => Reader e Int
+greaterThan5 :: AsUnread e => Reader e Int
 greaterThan5 s =
-  note (Error.unread "fail") (do v <- readMaybe s; guard (v > 5); return v)
+  note (unread "fail") (do v <- readMaybe s; guard (v > 5); return v)
 
 p :: Parser Error a -> Maybe a
 p x = hush (parsePure x fancyEnv)
