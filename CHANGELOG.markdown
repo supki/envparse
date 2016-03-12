@@ -1,6 +1,13 @@
 0.2.2
 =====
 
+  * Supported user-defined `Reader` errors. (https://github.com/supki/envparse/pull/4)
+
+  * Widened the range of GHC versions to test the library with from 7.6–7.8 to 7.6–HEAD.
+
+0.2.2
+=====
+
   * Added `helpDoc`, a `Parser` pretty-printer for use in error messages.
 
 0.2.1

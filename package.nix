@@ -1,11 +1,11 @@
 { mkDerivation, base, containers, hspec, stdenv }:
 mkDerivation {
   pname = "envparse";
-  version = "0.2.2";
+  version = "0.3.0";
   src = ./.;
-  buildDepends = [ base containers ];
-  testDepends = [ base containers hspec ];
+  libraryHaskellDepends = [ base containers ];
+  testHaskellDepends = [ base containers hspec ];
   homepage = "https://supki.github.io/envparse";
   description = "Parse environment variables";
-  license = stdenv.lib.licenses.bsd2;
+  license = stdenv.lib.licenses.bsd3;
 }

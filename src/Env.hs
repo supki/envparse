@@ -11,13 +11,13 @@
 -- data Hello = Hello { name :: String, quiet :: Bool }
 --
 -- hello :: IO Hello
--- hello = Env.'parse' ('header' \"envparse example\") $
+-- hello = Env.'parse' ('Help.header' \"envparse example\") $
 --   Hello \<$\> 'var' ('str' <=< 'nonempty') \"NAME\"  ('help' \"Target for the greeting\")
 --         \<*\> 'switch'                 \"QUIET\" ('help' \"Whether to actually print the greeting\")
 --
 -- main :: IO ()
 -- main = do
---   Hello { name, quiet } <- hello
+--   Hello {name, quiet} <- hello
 --   unless quiet $
 --     putStrLn (\"Hello, \" ++ name ++ \"!\")
 -- @
@@ -110,7 +110,7 @@ import qualified Env.Error as Error
 -- Prints the help text and exits with @EXIT_FAILURE@ on encountering a parse error.
 --
 -- @
--- >>> parse ('header' \"env-parse 0.2.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
+-- >>> parse ('Help.header' \"env-parse 0.2.0\") ('var' 'str' \"USER\" ('def' \"nobody\"))
 -- @
 parse :: (Help.Info Error -> Help.Info e) -> Parser e a -> IO a
 parse m =

@@ -1,5 +1,5 @@
 name:                envparse
-version:             0.2.2
+version:             0.3.0
 synopsis:            Parse environment variables
 description:
   Here's a simple example of a program that uses @envparse@'s parser:
@@ -58,6 +58,7 @@ extra-source-files:
   README.markdown
   CHANGELOG.markdown
   example/Main.hs
+  example/CustomError.hs
 
 source-repository head
   type:     git
@@ -66,7 +67,7 @@ source-repository head
 source-repository this
   type:     git
   location: https://github.com/supki/envparse
-  tag:      0.2.2
+  tag:      0.3.0
 
 library
   default-language:
