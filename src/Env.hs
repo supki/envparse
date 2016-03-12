@@ -70,7 +70,7 @@ module Env
   , help
   , Help.helpDoc
   , Error(..)
-  , AsUnset(..)
+  , Error.AsUnset(..)
   , Error.AsEmpty(..)
   , Error.AsUnread(..)
   -- * Re-exports
@@ -95,7 +95,7 @@ import qualified System.IO as IO
 
 import qualified Env.Help as Help
 import           Env.Parse
-import           Env.Error (Error, AsUnset)
+import           Env.Error (Error)
 import qualified Env.Error as Error
 
 -- $re-exports
