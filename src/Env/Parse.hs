@@ -151,8 +151,6 @@ instance Monoid (Mod t a) where
   mempty = Mod id
   mappend (Mod f) (Mod g) = Mod (g . f)
 
-
-
 -- | Environment variable metadata
 data Var a = Var
   { varHelp    :: Maybe String
@@ -175,7 +173,7 @@ def d = Mod (\v -> v { varDef = Just d })
 
 -- | Flag metadata
 data Flag a = Flag
-  { flagHelp    :: Maybe String
+  { flagHelp   :: Maybe String
   }
 
 defaultFlag :: Flag a

@@ -1,4 +1,9 @@
-0.2.2
+0.3.1
+=====
+
+  * Supported `Generic`ally derived `Parser`s on GHC >= 7.10.
+
+0.3.0
 =====
 
   * Supported user-defined `Reader` errors. (https://github.com/supki/envparse/pull/4)
