@@ -32,7 +32,7 @@ import           Prelude hiding (mod)
 import qualified Env
 
 
-class Record e a | a -> e where
+class Record e a where
   record :: Env.Parser e a
   default record :: (r ~ G.Rep a, G.Generic a, GRecord e r) => Env.Parser e a
   record =

@@ -1,5 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 module Env.GenericSpec (spec) where
 
@@ -32,7 +34,7 @@ fooBarSpec :: Spec
 fooBarSpec =
   describe "FooBar" $
     it "can be parsed using the Generic parser" $
-      parsePure record [("FOO", "blah"), ("BAR", "4")] `shouldBe`
+      p [("FOO", "blah"), ("BAR", "4")] `shouldBe`
         pure FooBar {foo="blah", bar=4}
 
 data Qux = Qux
@@ -46,6 +48,10 @@ quxSpec :: Spec
 quxSpec =
   describe "Qux" $
     it "can be parsed using the Generic parser" $
-      parsePure record [("XYZ", "1"), ("XYZ_ZY", "7")] `shouldBe`
+      p [("XYZ", "1"), ("XYZ_ZY", "7")] `shouldBe`
         pure Qux {quxXyz=True, quxXyzZy=7}
+
+p :: Record Error a => [(String, String)] -> Either [(String, Error)] a
+p =
+  parsePure record
 #endif
