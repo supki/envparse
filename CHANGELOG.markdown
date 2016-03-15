@@ -1,7 +1,7 @@
 0.3.1
 =====
 
-  * Supported `Generic`ally derived `Parser`s on GHC >= 7.10.
+  * Supported `Generic`ally derived `Parser`s on GHC 7.10.
 
 0.3.0
 =====
