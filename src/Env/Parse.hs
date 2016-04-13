@@ -18,6 +18,7 @@ module Env.Parse
   , auto
   , def
   , helpDef
+  , showDef
   , flag
   , switch
   , Flag
@@ -26,6 +27,7 @@ module Env.Parse
   ) where
 
 import           Control.Applicative
+import           Control.Arrow (left)
 import           Control.Monad ((<=<))
 import           Data.Map (Map)
 import qualified Data.Map as Map
@@ -48,11 +50,7 @@ parsePure (Parser p) (Map.fromList -> env) =
 
 readVar :: VarF e a -> Map String String -> Either [(String, e)] a
 readVar VarF {varfName, varfReader} =
-  mapLeft (pure . (\err -> (varfName, err))) . varfReader varfName
-
-mapLeft :: (a -> b) -> Either a t -> Either b t
-mapLeft f =
-  either (Left . f) Right
+  left (pure . (\err -> (varfName, err))) . varfReader varfName
 
 
 -- | An environment parser
@@ -139,8 +137,7 @@ nonempty = fmap fromString . go where go [] = Left Error.empty; go xs = Right xs
 
 -- | The reader that uses the 'Read' instance of the type
 auto :: (Error.AsUnread e, Read a) => Reader e a
-auto = \s -> case reads s of [(v, "")] -> Right v; _ -> Left (Error.unread (show s))
-{-# ANN auto "HLint: ignore Redundant lambda" #-}
+auto s = case reads s of [(v, "")] -> Right v; _ -> Left (Error.unread (show s))
 
 
 -- | This represents a modification of the properties of a particular 'Parser'.
@@ -179,9 +176,14 @@ data Flag a = Flag
 defaultFlag :: Flag a
 defaultFlag = Flag { flagHelp = Nothing }
 
--- | Show the default value of the variable in the help text
+-- | Show the default value of the variable in help.
 helpDef :: (a -> String) -> Mod Var a
 helpDef d = Mod (\v -> v { varHelpDef = Just d })
+
+-- | Use the 'Show' instance to show the default value of the variable in help.
+showDef :: Show a => Mod Var a
+showDef =
+  helpDef show
 
 
 -- | A class of things that can have a help message attached to them
