@@ -107,13 +107,15 @@ var r n (Mod f) = Parser . liftAlt $ VarF
 --
 -- /Note:/ this parser never fails.
 flag
-  :: forall e a. (Error.AsUnset e, Error.AsEmpty e)
-  => a -- ^ default value
+  :: a -- ^ default value
   -> a -- ^ active value
   -> String -> Mod Flag a -> Parser e a
 flag f t n (Mod g) = Parser . liftAlt $ VarF
   { varfName    = n
-  , varfReader  = \name -> Right . either (const f) (const t) . (nonempty :: Reader e String) <=< lookupVar name
+  , varfReader  = \name env ->
+      pure $ case (nonempty :: Reader Error.Error String) =<< lookupVar name env of
+        Left  _ -> f
+        Right _ -> t
   , varfHelp    = flagHelp
   , varfDef     = Just f
   , varfHelpDef = Nothing
@@ -123,8 +125,8 @@ flag f t n (Mod g) = Parser . liftAlt $ VarF
 
 -- | A simple boolean 'flag'
 --
--- /Note:/ the same caveats apply.
-switch :: (Error.AsUnset e, Error.AsEmpty e) => String -> Mod Flag Bool -> Parser e Bool
+-- /Note:/ this parser never fails.
+switch :: String -> Mod Flag Bool -> Parser e Bool
 switch = flag False True
 
 -- | The trivial reader

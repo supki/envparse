@@ -1,3 +1,9 @@
+0.3.3
+=====
+
+  * Removed the unnecessary `AsEmpty` and `AsUnset` constraints on the error type
+    in the `flag` and `switch` parsers.
+
 0.3.2
 =====
 
