@@ -60,6 +60,7 @@ module Env
   , Reader
   , str
   , nonempty
+  , splitOn
   , auto
   , def
   , helpDef

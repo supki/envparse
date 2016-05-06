@@ -103,6 +103,7 @@ test-suite spec
       >= 4.6 && < 5
     , containers
     , hspec
+    , text
   hs-source-dirs:
     src
     test
@@ -111,5 +112,6 @@ test-suite spec
   other-modules:
     EnvSpec
     Env.GenericSpec
+    Env.Internal.ParserSpec
   ghc-options:
     -Wall

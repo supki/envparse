@@ -15,6 +15,7 @@ module Env.Internal.Parser
   , Reader
   , str
   , nonempty
+  , splitOn
   , auto
   , def
   , helpDef
@@ -154,6 +155,20 @@ nonempty =
 auto :: (Error.AsUnread e, Read a) => Reader e a
 auto s =
   case reads s of [(v, "")] -> Right v; _ -> Left (Error.unread (show s))
+
+-- | The reader that splits a string into a list of strings consuming the separator.
+splitOn :: Char -> Reader e [String]
+splitOn sep = Right . go
+ where
+  go [] = []
+  go xs = go' xs
+
+  go' xs =
+    case break (== sep) xs of
+      (ys, []) ->
+        ys : []
+      (ys, _ : zs) ->
+        ys : go' zs
 
 
 -- | This represents a modification of the properties of a particular 'Parser'.
