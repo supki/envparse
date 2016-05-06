@@ -84,13 +84,13 @@ module Env
 
 import           Control.Applicative
 import           Control.Monad ((>=>), (<=<))
-import           Data.Foldable (asum)
+import           Data.Foldable (asum, for_)
 #if __GLASGOW_HASKELL__ < 710
 import           Data.Monoid (Monoid(..), (<>))
 #else
 import           Data.Monoid ((<>))
 #endif
-import           System.Environment (getEnvironment)
+import           System.Environment (getEnvironment, unsetEnv)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
@@ -121,11 +121,16 @@ parse m =
 --
 -- Use this if simply dying on failure (the behavior of 'parse') is inadequate for your needs.
 parseOr :: (String -> IO a) -> (Help.Info Error -> Help.Info e) -> Parser e b -> IO (Either a b)
-parseOr f g p =
-  traverseLeft (f . Help.helpInfo (g Help.defaultInfo) p) . parsePure p =<< getEnvironment
+parseOr onFailure helpMod parser = do
+  b <- fmap (parsePure parser) getEnvironment
+  for_ b $ \_ ->
+    eachVar parser unsetEnv
+  traverseLeft (onFailure . Help.helpInfo (helpMod Help.defaultInfo) parser) b
 
 die :: String -> IO a
-die m = do IO.hPutStrLn IO.stderr m; exitFailure
+die m =
+  do IO.hPutStrLn IO.stderr m; exitFailure
 
 traverseLeft :: Applicative f => (a -> f b) -> Either a t -> f (Either b t)
-traverseLeft f = either (fmap Left . f) (pure . Right)
+traverseLeft f =
+  either (fmap Left . f) (pure . Right)

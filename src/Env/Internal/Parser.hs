@@ -1,12 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 module Env.Internal.Parser
   ( Parser(..)
   , VarF(..)
   , parsePure
+  , eachVar
   , Mod(..)
   , prefixed
   , var
@@ -30,8 +30,10 @@ module Env.Internal.Parser
 import           Control.Applicative
 import           Control.Arrow (left)
 import           Control.Monad ((<=<))
+import           Data.Foldable (for_)
 import           Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 #if __GLASGOW_HASKELL__ < 710
 import           Data.Monoid (Monoid(..))
 #endif
@@ -43,11 +45,15 @@ import           Env.Internal.Val
 
 
 -- | Try to parse a pure environment
-parsePure :: Parser e b -> [(String, String)] -> Either [(String, e)] b
+parsePure :: Parser e a -> [(String, String)] -> Either [(String, e)] a
 parsePure (Parser p) (Map.fromList -> env) =
   toEither (runAlt go p)
  where
   go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v env))
+
+eachVar :: Applicative m => Parser e a -> (String -> m b) -> m ()
+eachVar Parser {unParser} =
+  for_ (foldAlt (Set.singleton . varfName) unParser)
 
 readVar :: VarF e a -> Map String String -> Either [(String, e)] a
 readVar VarF {varfName, varfReader} =
