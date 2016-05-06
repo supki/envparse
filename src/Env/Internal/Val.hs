@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
-module Env.Val
+module Env.Internal.Val
   ( Val(..)
   , fromEither
   , toEither
@@ -34,7 +34,9 @@ instance Monoid e => Alternative (Val e) where
   x     <|> _    = x
 
 fromEither :: Either e a -> Val e a
-fromEither = either Err Ok
+fromEither =
+  either Err Ok
 
 toEither :: Val e a -> Either e a
-toEither x = case x of Err e -> Left e; Ok a -> Right a
+toEither x =
+  case x of Err e -> Left e; Ok a -> Right a

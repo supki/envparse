@@ -3,7 +3,7 @@
 -- Each kind of errors gets a separate type class which encodes
 -- a 'Prism' (roughly a getter and a constructor). The 'Reader's, then,
 -- have the constraints for precisely the set of errors they can return.
-module Env.Error
+module Env.Internal.Error
   ( Error(..)
   , AsUnset(..)
   , AsEmpty(..)

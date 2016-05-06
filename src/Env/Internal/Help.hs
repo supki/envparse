@@ -1,5 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
-module Env.Help
+module Env.Internal.Help
   ( helpInfo
   , helpDoc
   , Info
@@ -18,10 +18,10 @@ import qualified Data.Map as Map
 import           Data.Maybe (catMaybes, mapMaybe)
 import           Data.Ord (comparing)
 
-import           Env.Error (Error)
-import qualified Env.Error as Error
-import           Env.Free
-import           Env.Parse hiding (Mod)
+import           Env.Internal.Error (Error)
+import qualified Env.Internal.Error as Error
+import           Env.Internal.Free
+import           Env.Internal.Parser hiding (Mod)
 
 
 helpInfo :: Info e -> Parser e b -> [(String, e)] -> String
@@ -39,10 +39,11 @@ helpDoc p =
   List.intercalate "\n" ("Available environment variables:\n" : helpParserDoc p)
 
 helpParserDoc :: Parser e a -> [String]
-helpParserDoc = concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc v)) . unParser
+helpParserDoc =
+  concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc v)) . unParser
 
 helpVarfDoc :: VarF e a -> [String]
-helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
+helpVarfDoc VarF {varfName, varfHelp, varfHelpDef} =
   case varfHelp of
     Nothing -> [indent 2 varfName]
     Just h
@@ -55,7 +56,8 @@ helpVarfDoc VarF { varfName, varfHelp, varfHelpDef } =
            t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
 
 splitWords :: Int -> String -> [String]
-splitWords n = go [] 0 . words
+splitWords n =
+  go [] 0 . words
  where
   go acc _ [] = prep acc
   go acc k (w : ws)
@@ -69,7 +71,8 @@ splitWords n = go [] 0 . words
   prep acc = [unwords (reverse acc)]
 
 indent :: Int -> String -> String
-indent n s = replicate n ' ' ++ s
+indent n s =
+  replicate n ' ' ++ s
 
 helpErrors :: ErrorHandler e -> [(String, e)] -> [String]
 helpErrors _       [] = []

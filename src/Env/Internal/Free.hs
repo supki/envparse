@@ -3,7 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | @Alt F@ is the free 'Alternative' functor on @F@
-module Env.Free
+module Env.Internal.Free
   ( Alt(..)
   , liftAlt
   , runAlt
@@ -66,10 +66,12 @@ runAlt u = go where
   go (Lift x)  = u x
 
 foldAlt :: Monoid p => (forall a. f a -> p) -> Alt f b -> p
-foldAlt f = unMon . runAlt (Mon . f)
+foldAlt f =
+  unMon . runAlt (Mon . f)
 
 hoistAlt :: forall f g b. Functor g => (forall a. f a -> g a) -> Alt f b -> Alt g b
-hoistAlt nat = runAlt (Lift . nat)
+hoistAlt nat =
+  runAlt (Lift . nat)
 
 
 -- | The 'Alternative' functor induced by the 'Monoid'

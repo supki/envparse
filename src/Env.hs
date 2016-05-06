@@ -93,10 +93,10 @@ import           System.Environment (getEnvironment)
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
-import qualified Env.Help as Help
-import           Env.Parse
-import           Env.Error (Error)
-import qualified Env.Error as Error
+import qualified Env.Internal.Help as Help
+import           Env.Internal.Parser
+import           Env.Internal.Error (Error)
+import qualified Env.Internal.Error as Error
 
 -- $re-exports
 -- External functions that may be useful to the consumer of the library

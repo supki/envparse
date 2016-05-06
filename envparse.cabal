@@ -82,15 +82,14 @@ library
     src
   exposed-modules:
     Env
+    Env.Internal.Error
+    Env.Internal.Free
+    Env.Internal.Help
+    Env.Internal.Val
+    Env.Internal.Parser
   if impl(ghc >= 7.10)
     exposed-modules:
       Env.Generic
-  other-modules:
-    Env.Error
-    Env.Free
-    Env.Help
-    Env.Parse
-    Env.Val
   ghc-options:
     -Wall
 
