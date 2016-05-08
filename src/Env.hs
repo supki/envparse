@@ -123,8 +123,10 @@ parse m =
 parseOr :: (String -> IO a) -> (Help.Info Error -> Help.Info e) -> Parser e b -> IO (Either a b)
 parseOr onFailure helpMod parser = do
   b <- fmap (parsePure parser) getEnvironment
+#if __GLASGOW_HASKELL__ >= 708
   for_ b $ \_ ->
     eachVar parser unsetEnv
+#endif
   traverseLeft (onFailure . Help.helpInfo (helpMod Help.defaultInfo) parser) b
 
 die :: String -> IO a
