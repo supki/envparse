@@ -90,7 +90,10 @@ import           Data.Monoid (Monoid(..), (<>))
 #else
 import           Data.Monoid ((<>))
 #endif
-import           System.Environment (getEnvironment, unsetEnv)
+import           System.Environment (getEnvironment)
+#if __GLASGOW_HASKELL__ >= 708
+import           System.Environment (unsetEnv)
+#endif
 import           System.Exit (exitFailure)
 import qualified System.IO as IO
 
