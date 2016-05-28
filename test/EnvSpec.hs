@@ -93,6 +93,22 @@ spec =
       parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a")) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
       lookupEnv "FOO" `shouldReturn` Nothing
       lookupEnv "BAR" `shouldReturn` Nothing
+
+    context "some variables are marked as kept" $
+      it "does not unset them" $ do
+        setEnv "FOO" "4"
+        setEnv "BAR" "7"
+        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
+        lookupEnv "FOO" `shouldReturn` Just "4"
+        lookupEnv "BAR" `shouldReturn` Nothing
+
+    context "parsing fails" $
+      it "does not unset any variables" $ do
+        setEnv "FOO" "4"
+        setEnv "BAR" "bar"
+        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldThrow` anyException
+        lookupEnv "FOO" `shouldReturn` Just "4"
+        lookupEnv "BAR" `shouldReturn` Just "bar"
 #endif
 
 

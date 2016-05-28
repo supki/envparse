@@ -69,6 +69,8 @@ module Env
   , Flag
   , HasHelp
   , help
+  , HasKeep
+  , keep
   , Help.helpDoc
   , Error(..)
   , Error.AsUnset(..)
@@ -128,7 +130,7 @@ parseOr onFailure helpMod parser = do
   b <- fmap (parsePure parser) getEnvironment
 #if __GLASGOW_HASKELL__ >= 708
   for_ b $ \_ ->
-    eachVar parser unsetEnv
+    eachUnsetVar parser unsetEnv
 #endif
   traverseLeft (onFailure . Help.helpInfo (helpMod Help.defaultInfo) parser) b
 

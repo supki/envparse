@@ -1,3 +1,12 @@
+0.4
+===
+
+  * Supported GHC 8.0.1.
+
+  * On GHC 7.8 and newer, as a secutiry measure, all declared variables are unset by the end of
+    a successful parsing.  If you want to keep the variable in the environment, use the `keep` modifier.
+    (https://github.com/supki/envparse/pull/7)
+
 0.3.4
 =====
 
