@@ -1,6 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE DeriveTraversable #-}
+#if __GLASGOW_HASKELL__ < 800
+{-# LANGUAGE ExplicitNamespaces #-}
+#endif
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE LambdaCase #-}
@@ -91,7 +95,11 @@
 module Env.Generic
   ( Record(..)
   , Field(..)
+#if __GLASGOW_HASKELL__ < 800
   , (?)(..)
+#else
+  , type (?)(..)
+#endif
   , G.Generic
   ) where
 
@@ -138,7 +146,7 @@ instance GRecord e a => GRecord e (G.D1 c a) where
     fmap G.M1 . gr
 
 -- Constant values are converted to 'Env.Parser's using their 'Field' instance.
-instance (Env.AsUnset e, Field e a) => GRecord e (G.K1 i a) where
+instance Field e a => GRecord e (G.K1 i a) where
   gr State {stateVar} =
     fmap G.K1 (field stateVar Nothing)
 
@@ -158,7 +166,17 @@ instance (GRecord e f, GRecord e g) => GRecord e (f G.:+: g) where
   gr x =
     fmap G.L1 (gr x) <|> fmap G.R1 (gr x)
 
+#if __GLASGOW_HASKELL__ < 800
+type family Type x :: ConType where
+  Type G.NoSelector = 'Plain
+  Type x = 'Record
+
+data ConType = Plain | Record
+
 instance (G.Selector c, Type c ~ 'Record, GRecord e a) => GRecord e (G.S1 c a) where
+#else
+instance (G.Selector c, c ~ ('G.MetaSel ('Just x1) x2 x3 x4), GRecord e a) => GRecord e (G.S1 c a) where
+#endif
   gr state@State {statePrefix, stateCon} =
     fmap G.M1 (gr state {stateVar=statePrefix ++ suffix})
    where
@@ -179,12 +197,6 @@ camelTo2 = map Char.toUpper . go2 . go1
   go2 "" = ""
   go2 (l:u:xs) | Char.isLower l && Char.isUpper u = l : '_' : u : go2 xs
   go2 (x:xs) = x : go2 xs
-
-type family Type x :: ConType where
-  Type G.NoSelector = 'Plain
-  Type x = 'Record
-
-data ConType = Plain | Record
 
 -- | Given a @Field e a@ instance, a value of the type @a@ can be parsed from an environment variable.
 -- If the parsing fails, a value of an error type @e@ is returned.
