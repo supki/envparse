@@ -175,7 +175,7 @@ data ConType = Plain | Record
 
 instance (G.Selector c, Type c ~ 'Record, GRecord e a) => GRecord e (G.S1 c a) where
 #else
-instance (G.Selector c, c ~ ('G.MetaSel ('Just x1) x2 x3 x4), GRecord e a) => GRecord e (G.S1 c a) where
+instance (G.Selector c, c ~ 'G.MetaSel ('Just x1) x2 x3 x4, GRecord e a) => GRecord e (G.S1 c a) where
 #endif
   gr state@State {statePrefix, stateCon} =
     fmap G.M1 (gr state {stateVar=statePrefix ++ suffix})

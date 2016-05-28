@@ -9,6 +9,9 @@ import           Control.Monad
 import           Data.Monoid (mempty)
 #endif
 import           Prelude hiding (pi)
+#if __GLASGOW_HASKELL__ >= 708
+import           System.Environment (lookupEnv, setEnv)
+#endif
 import           Test.Hspec
 import           Text.Read (readMaybe)
 
@@ -82,6 +85,31 @@ spec =
         p (prefixed "pre" (prefixed "pro" (var str "morphism" mempty)))
        `shouldBe`
         Just "zygohistomorphic"
+
+#if __GLASGOW_HASKELL__ >= 708
+    it "unsets parsed variables" $ do
+      setEnv "FOO" "4"
+      setEnv "BAR" "7"
+      parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a")) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
+      lookupEnv "FOO" `shouldReturn` Nothing
+      lookupEnv "BAR" `shouldReturn` Nothing
+
+    context "some variables are marked as kept" $
+      it "does not unset them" $ do
+        setEnv "FOO" "4"
+        setEnv "BAR" "7"
+        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
+        lookupEnv "FOO" `shouldReturn` Just "4"
+        lookupEnv "BAR" `shouldReturn` Nothing
+
+    context "parsing fails" $
+      it "does not unset any variables" $ do
+        setEnv "FOO" "4"
+        setEnv "BAR" "bar"
+        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldThrow` anyException
+        lookupEnv "FOO" `shouldReturn` Just "4"
+        lookupEnv "BAR" `shouldReturn` Just "bar"
+#endif
 
 
 greaterThan5 :: AsUnread e => Reader e Int
