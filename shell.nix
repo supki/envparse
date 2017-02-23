@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc7103" }: let
+{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc802" }: let
   inherit (nixpkgs) pkgs;
   haskell = pkgs.haskell.packages.${compiler};
 
@@ -13,8 +13,6 @@ in
     buildInputs = [
       ghc
       haskell.cabal-install
-      haskell.codex
-      haskell.hasktags
 
       pkgs.moreutils
     ] ++ this.env.buildInputs;
