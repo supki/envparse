@@ -69,8 +69,8 @@ module Env
   , Flag
   , HasHelp
   , help
-  , HasKeep
-  , keep
+  , HasClear
+  , clear
   , Help.helpDoc
   , Error(..)
   , Error.AsUnset(..)
