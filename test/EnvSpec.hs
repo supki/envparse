@@ -8,6 +8,7 @@ import           Control.Monad
 #if __GLASGOW_HASKELL__ < 710
 import           Data.Monoid (mempty)
 #endif
+import           Numeric.Natural
 import           Prelude hiding (pi)
 #if __GLASGOW_HASKELL__ >= 708
 import           System.Environment (lookupEnv, setEnv)
@@ -47,6 +48,9 @@ spec =
 
     it "looking for the non-existing env var selects the default flag value" $
       p (flag 4 7 "xyzzy" mempty) `shouldBe` Just 4
+
+    it "does not clobber an invalid value with the default" $
+      p (var auto "invalid-nat" (def 1)) `shouldBe` (Nothing :: Maybe Natural)
 
     context "readers" $ do
       it "can use a reader to parse the env var value" $
@@ -130,6 +134,7 @@ fancyEnv =
   , "num2"     ~> "7"
   , "yep"      ~> "!"
   , "empty"    ~> ""
+  , "invalid-nat" ~> "-1"
   ]
  where
   (~>) = (,)

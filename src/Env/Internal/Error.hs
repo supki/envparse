@@ -8,6 +8,7 @@ module Env.Internal.Error
   , AsUnset(..)
   , AsEmpty(..)
   , AsUnread(..)
+  , defaultIfUnset
   ) where
 
 
@@ -28,6 +29,11 @@ data Error
 class AsUnset e where
   unset :: e
   tryUnset :: e -> Maybe ()
+
+defaultIfUnset :: AsUnset e => a -> e -> Either e a
+defaultIfUnset d e
+  | tryUnset e == Just () = Right d
+  | otherwise = Left e
 
 instance AsUnset Error where
   unset = UnsetError
