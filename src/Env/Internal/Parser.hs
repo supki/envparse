@@ -51,7 +51,7 @@ parsePure :: Parser e a -> [(String, String)] -> Either [(String, e)] a
 parsePure (Parser p) (Map.fromList -> env) =
   toEither (runAlt go p)
  where
-  go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v env))
+  go v = fromEither $ readVar v env
 
 eachUnsetVar :: Applicative m => Parser e a -> (String -> m b) -> m ()
 eachUnsetVar Parser {unParser} =
@@ -113,7 +113,11 @@ var :: Error.AsUnset e => Reader e a -> String -> Mod Var a -> Parser e a
 var r n (Mod f) =
   liftVarF $ VarF
     { varfName    = n
-    , varfReader  = \name -> r <=< lookupVar name
+    , varfReader  = \name ->
+      maybe
+        (r <=< lookupVar name)
+        (\d -> either (Error.defaultIfUnset d) r . lookupVar name)
+        varDef
     , varfHelp    = varHelp
     , varfDef     = varDef
     , varfHelpDef = varHelpDef <*> varDef
