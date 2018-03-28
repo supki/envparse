@@ -25,8 +25,8 @@ module Env.Internal.Parser
   , Flag
   , HasHelp
   , help
-  , HasKeep
-  , keep
+  , HasClear
+  , clear
   ) where
 
 import           Control.Applicative
@@ -55,7 +55,7 @@ parsePure (Parser p) (Map.fromList -> env) =
 
 eachUnsetVar :: Applicative m => Parser e a -> (String -> m b) -> m ()
 eachUnsetVar Parser {unParser} =
-  for_ (foldAlt (\VarF {varfKeep, varfName} -> if varfKeep then Set.empty else Set.singleton varfName) unParser)
+  for_ (foldAlt (\VarF {varfClear, varfName} -> if varfClear then Set.singleton varfName else Set.empty) unParser)
 
 readVar :: VarF e a -> Map String String -> Either [(String, e)] a
 readVar VarF {varfName, varfReader} =
@@ -90,7 +90,7 @@ data VarF e a = VarF
   , varfHelp    :: Maybe String
   , varfDef     :: Maybe a
   , varfHelpDef :: Maybe String
-  , varfKeep    :: Bool
+  , varfClear   :: Bool
   } deriving (Functor)
 
 liftVarF :: VarF e a -> Parser e a
@@ -117,10 +117,10 @@ var r n (Mod f) =
     , varfHelp    = varHelp
     , varfDef     = varDef
     , varfHelpDef = varHelpDef <*> varDef
-    , varfKeep    = varKeep
+    , varfClear   = varClear
     }
  where
-  Var {varHelp, varDef, varHelpDef, varKeep} = f defaultVar
+  Var {varHelp, varDef, varHelpDef, varClear} = f defaultVar
 
 -- | A flag that takes the active value if the environment variable
 -- is set and non-empty and the default value otherwise
@@ -140,10 +140,10 @@ flag f t n (Mod g) =
     , varfHelp    = flagHelp
     , varfDef     = Just f
     , varfHelpDef = Nothing
-    , varfKeep    = flagKeep
+    , varfClear   = flagClear
     }
  where
-  Flag {flagHelp, flagKeep} = g defaultFlag
+  Flag {flagHelp, flagClear} = g defaultFlag
 
 -- | A simple boolean 'flag'
 --
@@ -195,7 +195,7 @@ data Var a = Var
   { varHelp    :: Maybe String
   , varHelpDef :: Maybe (a -> String)
   , varDef     :: Maybe a
-  , varKeep    :: Bool
+  , varClear   :: Bool
   }
 
 defaultVar :: Var a
@@ -203,11 +203,11 @@ defaultVar = Var
   { varHelp    = Nothing
   , varDef     = Nothing
   , varHelpDef = Nothing
-  , varKeep    = defaultKeep
+  , varClear   = defaultClear
   }
 
-defaultKeep :: Bool
-defaultKeep = False
+defaultClear :: Bool
+defaultClear = False
 
 -- | The default value of the variable
 --
@@ -218,14 +218,14 @@ def d =
 
 -- | Flag metadata
 data Flag a = Flag
-  { flagHelp   :: Maybe String
-  , flagKeep   :: Bool
+  { flagHelp  :: Maybe String
+  , flagClear :: Bool
   }
 
 defaultFlag :: Flag a
 defaultFlag = Flag
-  { flagHelp = Nothing
-  , flagKeep = defaultKeep
+  { flagHelp  = Nothing
+  , flagClear = defaultClear
   }
 
 -- | Show the default value of the variable in help.
@@ -254,18 +254,22 @@ help :: HasHelp t => String -> Mod t a
 help =
   Mod . setHelp
 
--- | A class of things that can be still kept in an environment when the
--- parsing has been completed.
-class HasKeep t where
-  setKeep :: t a -> t a
+-- | A class of things that can be cleared from an environment when the parsing
+-- has been completed.
+class HasClear t where
+  setClear :: t a -> t a
 
-instance HasKeep Var where
-  setKeep v = v {varKeep=True}
+instance HasClear Var where
+  setClear v = v {varClear=True}
 
-instance HasKeep Flag where
-  setKeep v = v {flagKeep=True}
+instance HasClear Flag where
+  setClear v = v {flagClear=True}
 
--- | Keep a variable.
-keep :: HasKeep t => Mod t a
-keep =
-  Mod setKeep
+-- | Clear a variable after reading it
+--
+-- This can make your application more secure by not passing parsed variables
+-- onto any sub-processes.
+--
+clear :: HasClear t => Mod t a
+clear =
+  Mod setClear

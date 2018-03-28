@@ -87,26 +87,26 @@ spec =
         Just "zygohistomorphic"
 
 #if __GLASGOW_HASKELL__ >= 708
-    it "unsets parsed variables" $ do
+    it "does not unset parsed variables" $ do
       setEnv "FOO" "4"
       setEnv "BAR" "7"
       parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a")) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
-      lookupEnv "FOO" `shouldReturn` Nothing
-      lookupEnv "BAR" `shouldReturn` Nothing
+      lookupEnv "FOO" `shouldReturn` Just "4"
+      lookupEnv "BAR" `shouldReturn` Just "7"
 
-    context "some variables are marked as kept" $
-      it "does not unset them" $ do
+    context "some variables are marked as clear" $
+      it "does unset them" $ do
         setEnv "FOO" "4"
         setEnv "BAR" "7"
-        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
-        lookupEnv "FOO" `shouldReturn` Just "4"
-        lookupEnv "BAR" `shouldReturn` Nothing
+        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> clear)) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
+        lookupEnv "FOO" `shouldReturn` Nothing
+        lookupEnv "BAR" `shouldReturn` Just "7"
 
     context "parsing fails" $
       it "does not unset any variables" $ do
         setEnv "FOO" "4"
         setEnv "BAR" "bar"
-        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldThrow` anyException
+        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> clear)) (var auto "BAR" (help "b"))) `shouldThrow` anyException
         lookupEnv "FOO" `shouldReturn` Just "4"
         lookupEnv "BAR" `shouldReturn` Just "bar"
 #endif
