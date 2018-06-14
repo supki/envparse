@@ -34,8 +34,10 @@ import           Control.Arrow (left)
 import           Control.Monad ((<=<))
 import           Data.Foldable (for_)
 import           Data.Map (Map)
+import           Data.Semigroup (Semigroup)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.Semigroup as SG
 #if __GLASGOW_HASKELL__ < 710
 import           Data.Monoid (Monoid(..))
 #endif
@@ -186,9 +188,12 @@ splitOn sep = Right . go
 -- Combine them using the 'Monoid' instance.
 newtype Mod t a = Mod (t a -> t a)
 
+instance Semigroup (Mod t a) where
+  Mod f <> Mod g = Mod (g . f)
+
 instance Monoid (Mod t a) where
   mempty = Mod id
-  mappend (Mod f) (Mod g) = Mod (g . f)
+  mappend = (SG.<>)
 
 -- | Environment variable metadata
 data Var a = Var

@@ -1,2 +1,4 @@
 dist/
 codex.tags
+dist-newstyle/
+.ghc*
