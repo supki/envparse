@@ -1,2 +1,4 @@
 dist/
+.stack-work/
 codex.tags
+.gitignore

@@ -39,6 +39,9 @@ import qualified Data.Set as Set
 #if __GLASGOW_HASKELL__ < 710
 import           Data.Monoid (Monoid(..))
 #endif
+#if MIN_VERSION_base(4,9,0)
+import           Data.Semigroup (Semigroup(..))
+#endif
 import           Data.String (IsString(..))
 
 import           Env.Internal.Free
@@ -186,9 +189,19 @@ splitOn sep = Right . go
 -- Combine them using the 'Monoid' instance.
 newtype Mod t a = Mod (t a -> t a)
 
+#if MIN_VERSION_base(4,9,0)
+instance Semigroup (Mod t a) where
+  Mod f <> Mod g = Mod (g . f)
+#endif
+
 instance Monoid (Mod t a) where
   mempty = Mod id
+#if MIN_VERSION_base(4,11,0)
+#elif MIN_VERSION_base(4,9,0)
+  mappend = (<>)
+#else
   mappend (Mod f) (Mod g) = Mod (g . f)
+#endif
 
 -- | Environment variable metadata
 data Var a = Var
