@@ -14,6 +14,7 @@ module Env.Internal.Parser
   , defaultVar
   , Reader
   , str
+  , char
   , nonempty
   , splitOn
   , auto
@@ -169,6 +170,11 @@ nonempty =
 auto :: (Error.AsUnread e, Read a) => Reader e a
 auto s =
   case reads s of [(v, "")] -> Right v; _ -> Left (Error.unread (show s))
+
+-- | The single character string reader
+char :: Error.AsUnread e => Reader e Char
+char s =
+  case s of [c] -> Right c; _ -> Left (Error.unread "must be a one-character string")
 
 -- | The reader that splits a string into a list of strings consuming the separator.
 splitOn :: Char -> Reader e [String]

@@ -16,7 +16,7 @@ module Env.Internal.Error
 --
 --   * Variables that are unset in the environment.
 --   * Variables whose value is empty.
---   * Variables whose value cannot be parsed using the 'Read' instance.
+--   * Variables whose value cannot be parsed.
 data Error
   = UnsetError
   | EmptyError
@@ -50,8 +50,7 @@ instance AsEmpty Error where
       _ -> Nothing
 
 -- | The class of types that contain and can be constructed from
--- the error returned from parsing variable whose value cannot
--- be parsed using the 'Read' instance.
+-- the error returned from parsing variable whose value cannot be parsed.
 class AsUnread e where
   unread :: String -> e
   tryUnread :: e -> Maybe String

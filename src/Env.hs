@@ -59,6 +59,7 @@ module Env
   , Var
   , Reader
   , str
+  , char
   , nonempty
   , splitOn
   , auto
