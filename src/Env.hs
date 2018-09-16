@@ -51,6 +51,9 @@ module Env
   , Help.header
   , Help.desc
   , Help.footer
+  , Help.varNameColumn
+  , Help.varHelpColumn
+  , Help.varHelpMaxColumns
   , Help.handleError
   , Help.ErrorHandler
   , Help.defaultErrorHandler
