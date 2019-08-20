@@ -92,28 +92,36 @@ spec =
         Just "zygohistomorphic"
 
 #if __GLASGOW_HASKELL__ >= 708
-    it "unsets parsed variables" $ do
+    it "does not unset parsed variables" $ do
       setEnv "FOO" "4"
       setEnv "BAR" "7"
       parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a")) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
-      lookupEnv "FOO" `shouldReturn` Nothing
-      lookupEnv "BAR" `shouldReturn` Nothing
+      lookupEnv "FOO" `shouldReturn` Just "4"
+      lookupEnv "BAR" `shouldReturn` Just "7"
 
-    context "some variables are marked as kept" $
-      it "does not unset them" $ do
+    context "some variables are marked as sensitive" $ do
+      it "unsets them" $ do
         setEnv "FOO" "4"
         setEnv "BAR" "7"
-        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldReturn` (11 :: Int)
+        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a")) (sensitive (var auto "BAR" (help "b")))) `shouldReturn` (11 :: Int)
         lookupEnv "FOO" `shouldReturn` Just "4"
         lookupEnv "BAR" `shouldReturn` Nothing
 
-    context "parsing fails" $
-      it "does not unset any variables" $ do
-        setEnv "FOO" "4"
-        setEnv "BAR" "bar"
-        parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a" <> keep)) (var auto "BAR" (help "b"))) `shouldThrow` anyException
-        lookupEnv "FOO" `shouldReturn` Just "4"
-        lookupEnv "BAR" `shouldReturn` Just "bar"
+      context "parsing fails" $
+        it "does not unset any variables" $ do
+          setEnv "FOO" "4"
+          setEnv "BAR" "bar"
+          parse (header "hi") (liftA2 (+) (var auto "FOO" (help "a")) (sensitive (var auto "BAR" (help "b")))) `shouldThrow` anyException
+          lookupEnv "FOO" `shouldReturn` Just "4"
+          lookupEnv "BAR" `shouldReturn` Just "bar"
+
+      context "unsetting multiple variables" $
+        it "unsets them" $ do
+          setEnv "FOO" "4"
+          setEnv "BAR" "7"
+          parse (header "hi") (sensitive (liftA2 (+) (var auto "FOO" (help "a")) (var auto "BAR" (help "b")))) `shouldReturn` (11 :: Int)
+          lookupEnv "FOO" `shouldReturn` Nothing
+          lookupEnv "BAR" `shouldReturn` Nothing
 #endif
 
 

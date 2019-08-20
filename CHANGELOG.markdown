@@ -3,6 +3,11 @@
 
   * Added `char`.
 
+  * Fixed masking parse errors with default values. (https://github.com/supki/envparse/issues/8)
+
+  * Replaced `keep` with `sensitive`. All variables are kept in the environment after a successul parse
+    except those wrapped in `sensitive`. (https://github.com/supki/envparse/issues/9)
+
 0.4.1
 =====
 

@@ -7,7 +7,7 @@ module Env.Internal.Parser
   ( Parser(..)
   , VarF(..)
   , parsePure
-  , eachUnsetVar
+  , traverseSensitiveVar
   , Mod(..)
   , prefixed
   , var
@@ -27,14 +27,13 @@ module Env.Internal.Parser
   , Flag
   , HasHelp
   , help
-  , HasKeep
-  , keep
+  , sensitive
   ) where
 
 import           Control.Applicative
 import           Control.Arrow (left)
 import           Control.Monad ((<=<))
-import           Data.Foldable (for_)
+import           Data.Foldable (traverse_)
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -56,16 +55,19 @@ parsePure :: Error.AsUnset e => Parser e a -> [(String, String)] -> Either [(Str
 parsePure (Parser p) (Map.fromList -> env) =
   toEither (runAlt (fromEither . left pure . go) p)
  where
-  go var@VarF {..} =
-    case lookupVar var env of
+  go v@VarF {..} =
+    case lookupVar v env of
       Left lookupErr ->
         maybe (Left lookupErr) pure varfDef
       Right val ->
-        readVar var val
+        readVar v val
 
-eachUnsetVar :: Applicative m => Parser e a -> (String -> m b) -> m ()
-eachUnsetVar Parser {unParser} =
-  for_ (foldAlt (\VarF {varfKeep, varfName} -> if varfKeep then Set.empty else Set.singleton varfName) unParser)
+traverseSensitiveVar :: Applicative m => Parser e a -> (String -> m b) -> m ()
+traverseSensitiveVar Parser {unParser} f =
+  traverse_ f sensitiveVars
+ where
+  sensitiveVars =
+    foldAlt (\VarF {varfSensitive, varfName} -> if varfSensitive then Set.singleton varfName else Set.empty) unParser
 
 readVar :: VarF e a -> String -> Either (String, e) a
 readVar VarF {..} =
@@ -100,14 +102,20 @@ prefixed :: String -> Parser e a -> Parser e a
 prefixed pre =
   Parser . hoistAlt (\v -> v {varfName=pre ++ varfName v}) . unParser
 
+-- | Mark the enclosed variables as sensitive to remove them from the environment
+-- once they've been parsed successfully.
+sensitive :: Parser e a -> Parser e a
+sensitive =
+  Parser . hoistAlt (\v -> v {varfSensitive = True}) . unParser
+
 
 data VarF e a = VarF
-  { varfName    :: String
-  , varfReader  :: Reader e a
-  , varfHelp    :: Maybe String
-  , varfDef     :: Maybe a
-  , varfHelpDef :: Maybe String
-  , varfKeep    :: Bool
+  { varfName      :: String
+  , varfReader    :: Reader e a
+  , varfHelp      :: Maybe String
+  , varfDef       :: Maybe a
+  , varfHelpDef   :: Maybe String
+  , varfSensitive :: Bool
   } deriving (Functor)
 
 liftVarF :: VarF e a -> Parser e a
@@ -125,15 +133,15 @@ type Reader e a = String -> Either e a
 var :: Error.AsUnset e => Reader e a -> String -> Mod Var a -> Parser e a
 var r n (Mod f) =
   liftVarF $ VarF
-    { varfName    = n
-    , varfReader  = r
-    , varfHelp    = varHelp
-    , varfDef     = varDef
+    { varfName = n
+    , varfReader = r
+    , varfHelp = varHelp
+    , varfDef = varDef
     , varfHelpDef = varHelpDef <*> varDef
-    , varfKeep    = varKeep
+    , varfSensitive = varSensitive
     }
  where
-  Var {varHelp, varDef, varHelpDef, varKeep} = f defaultVar
+  Var {varHelp, varDef, varHelpDef, varSensitive} = f defaultVar
 
 -- | A flag that takes the active value if the environment variable
 -- is set and non-empty and the default value otherwise
@@ -145,18 +153,18 @@ flag
   -> String -> Mod Flag a -> Parser e a
 flag f t n (Mod g) =
   liftVarF $ VarF
-    { varfName    = n
-    , varfReader  = \val ->
+    { varfName = n
+    , varfReader = \val ->
         pure $ case (nonempty :: Reader Error.Error String) val of
           Left  _ -> f
           Right _ -> t
-    , varfHelp    = flagHelp
-    , varfDef     = Just f
+    , varfHelp = flagHelp
+    , varfDef = Just f
     , varfHelpDef = Nothing
-    , varfKeep    = flagKeep
+    , varfSensitive = flagSensitive
     }
  where
-  Flag {flagHelp, flagKeep} = g defaultFlag
+  Flag {flagHelp, flagSensitive} = g defaultFlag
 
 -- | A simple boolean 'flag'
 --
@@ -220,22 +228,22 @@ instance Monoid (Mod t a) where
 
 -- | Environment variable metadata
 data Var a = Var
-  { varHelp    :: Maybe String
-  , varHelpDef :: Maybe (a -> String)
-  , varDef     :: Maybe a
-  , varKeep    :: Bool
+  { varHelp      :: Maybe String
+  , varHelpDef   :: Maybe (a -> String)
+  , varDef       :: Maybe a
+  , varSensitive :: Bool
   }
 
 defaultVar :: Var a
 defaultVar = Var
-  { varHelp    = Nothing
-  , varDef     = Nothing
+  { varHelp = Nothing
+  , varDef = Nothing
   , varHelpDef = Nothing
-  , varKeep    = defaultKeep
+  , varSensitive = defaultSensitive
   }
 
-defaultKeep :: Bool
-defaultKeep = False
+defaultSensitive :: Bool
+defaultSensitive = False
 
 -- | The default value of the variable
 --
@@ -246,14 +254,14 @@ def d =
 
 -- | Flag metadata
 data Flag a = Flag
-  { flagHelp   :: Maybe String
-  , flagKeep   :: Bool
+  { flagHelp      :: Maybe String
+  , flagSensitive :: Bool
   }
 
 defaultFlag :: Flag a
 defaultFlag = Flag
   { flagHelp = Nothing
-  , flagKeep = defaultKeep
+  , flagSensitive = defaultSensitive
   }
 
 -- | Show the default value of the variable in help.
@@ -281,19 +289,3 @@ instance HasHelp Flag where
 help :: HasHelp t => String -> Mod t a
 help =
   Mod . setHelp
-
--- | A class of things that can be still kept in an environment when the
--- parsing has been completed.
-class HasKeep t where
-  setKeep :: t a -> t a
-
-instance HasKeep Var where
-  setKeep v = v {varKeep=True}
-
-instance HasKeep Flag where
-  setKeep v = v {flagKeep=True}
-
--- | Keep a variable.
-keep :: HasKeep t => Mod t a
-keep =
-  Mod setKeep

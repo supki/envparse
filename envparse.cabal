@@ -102,10 +102,10 @@ test-suite spec
       base
       >= 4.6 && < 5
     , containers
+    , envparse
     , hspec
     , text
   hs-source-dirs:
-    src
     test
   main-is:
     Spec.hs
