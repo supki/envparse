@@ -59,6 +59,11 @@ spec =
       it "'nonempty' weeds out variables set to the empty string" $
         p (var (str <=< nonempty) "empty" mempty) `shouldBe` Nothing
 
+      context "var has a default value" $
+        context "malformed value is passed by the user" $
+          it "fails to parse" $
+            p (var auto "foo" (def 4)) `shouldBe` (Nothing :: Maybe Int)
+
     context "alternatives" $ do
       it "can look through a list of alternatives" $
         p (asum

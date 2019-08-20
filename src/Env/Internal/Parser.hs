@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 module Env.Internal.Parser
   ( Parser(..)
@@ -51,20 +52,32 @@ import           Env.Internal.Val
 
 
 -- | Try to parse a pure environment
-parsePure :: Parser e a -> [(String, String)] -> Either [(String, e)] a
+parsePure :: Error.AsUnset e => Parser e a -> [(String, String)] -> Either [(String, e)] a
 parsePure (Parser p) (Map.fromList -> env) =
-  toEither (runAlt go p)
+  toEither (runAlt (fromEither . left pure . go) p)
  where
-  go v = maybe id (\d x -> x <|> pure d) (varfDef v) (fromEither (readVar v env))
+  go var@VarF {..} =
+    case lookupVar var env of
+      Left lookupErr ->
+        maybe (Left lookupErr) pure varfDef
+      Right val ->
+        readVar var val
 
 eachUnsetVar :: Applicative m => Parser e a -> (String -> m b) -> m ()
 eachUnsetVar Parser {unParser} =
   for_ (foldAlt (\VarF {varfKeep, varfName} -> if varfKeep then Set.empty else Set.singleton varfName) unParser)
 
-readVar :: VarF e a -> Map String String -> Either [(String, e)] a
-readVar VarF {varfName, varfReader} =
-  left (pure . (\err -> (varfName, err))) . varfReader varfName
+readVar :: VarF e a -> String -> Either (String, e) a
+readVar VarF {..} =
+  addName varfName . varfReader
 
+lookupVar :: Error.AsUnset e => VarF e a -> Map String String -> Either (String, e) String
+lookupVar VarF {..} =
+  addName varfName . maybe (Left Error.unset) Right . Map.lookup varfName
+
+addName :: String -> Either e a -> Either (String, e) a
+addName name =
+  left ((,) name)
 
 -- | An environment parser
 newtype Parser e a = Parser { unParser :: Alt (VarF e) a }
@@ -90,7 +103,7 @@ prefixed pre =
 
 data VarF e a = VarF
   { varfName    :: String
-  , varfReader  :: String -> Map String String -> Either e a
+  , varfReader  :: Reader e a
   , varfHelp    :: Maybe String
   , varfDef     :: Maybe a
   , varfHelpDef :: Maybe String
@@ -104,10 +117,6 @@ liftVarF =
 -- | An environment variable's value parser. Use @(<=<)@ and @(>=>)@ to combine these
 type Reader e a = String -> Either e a
 
-lookupVar :: Error.AsUnset e => String -> Map String String -> Either e String
-lookupVar name =
-  maybe (Left Error.unset) Right . Map.lookup name
-
 -- | Parse a particular variable from the environment
 --
 -- @
@@ -117,7 +126,7 @@ var :: Error.AsUnset e => Reader e a -> String -> Mod Var a -> Parser e a
 var r n (Mod f) =
   liftVarF $ VarF
     { varfName    = n
-    , varfReader  = \name -> r <=< lookupVar name
+    , varfReader  = r
     , varfHelp    = varHelp
     , varfDef     = varDef
     , varfHelpDef = varHelpDef <*> varDef
@@ -137,8 +146,8 @@ flag
 flag f t n (Mod g) =
   liftVarF $ VarF
     { varfName    = n
-    , varfReader  = \name env ->
-        pure $ case (nonempty :: Reader Error.Error String) =<< lookupVar name env of
+    , varfReader  = \val ->
+        pure $ case (nonempty :: Reader Error.Error String) val of
           Left  _ -> f
           Right _ -> t
     , varfHelp    = flagHelp
