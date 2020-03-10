@@ -242,8 +242,8 @@ instance (Env.AsUnset e, Env.AsUnread e) => Field e Float
 instance (Env.AsUnset e, Env.AsUnread e) => Field e Double
 
 -- | Optional parser.
-instance (Env.Field e a, Env.AsUnset e, Env.AsUnread e) => Env.Field e (Maybe a) where
-  field name help = Env.optional (Env.field name help)
+instance (Field e a, Env.AsUnset e, Env.AsUnread e) => Field e (Maybe a) where
+  field name help = Env.optional (field name help)
 
 -- | Uses the 'String' value verbatim.
 instance Env.AsUnset e => Field e String where
