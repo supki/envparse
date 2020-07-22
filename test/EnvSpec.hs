@@ -124,6 +124,13 @@ spec =
           lookupEnv "BAR" `shouldReturn` Nothing
 #endif
 
+    context "#18" $
+      it "behaves reasonably" $ do
+        let parser = var (fmap Just . auto) "FOO" (def Nothing) :: Parser Error (Maybe Int)
+        parsePure parser [("FOO", "4")] `shouldBe` Right (Just 4)
+        parsePure parser [("FOO", "str")] `shouldBe` Left [("FOO", UnreadError "\"str\"")]
+        parsePure parser [] `shouldBe` Right Nothing
+
 
 greaterThan5 :: AsUnread e => Reader e Int
 greaterThan5 s =
