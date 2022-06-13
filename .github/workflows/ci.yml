@@ -1,0 +1,19 @@
+name: ci
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+      branches: [master]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '8.10'
+          enable-stack: true
+          stack-version: 'latest'
+      - run: stack test
