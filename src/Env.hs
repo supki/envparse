@@ -51,6 +51,7 @@ module Env
   , Help.header
   , Help.desc
   , Help.footer
+  , Help.widthMax
   , Help.handleError
   , Help.ErrorHandler
   , Help.defaultErrorHandler

@@ -9,6 +9,7 @@ module Env.Internal.Help
   , header
   , desc
   , footer
+  , widthMax
   , handleError
   ) where
 
@@ -25,35 +26,42 @@ import           Env.Internal.Parser hiding (Mod)
 
 
 helpInfo :: Info e -> Parser e b -> [(String, e)] -> String
-helpInfo Info {infoHeader, infoDesc, infoFooter, infoHandleError} p errors =
+helpInfo Info {infoHeader, infoDesc, infoFooter, infoHandleError, infoWidthMax} p errors =
   List.intercalate "\n\n" $ catMaybes
     [ infoHeader
-    , fmap (List.intercalate "\n" . splitWords 50) infoDesc
-    , Just (helpDoc p)
-    , fmap (List.intercalate "\n" . splitWords 50) infoFooter
+    , fmap (List.intercalate "\n" . splitWords infoWidthMax) infoDesc
+    , Just (helpDoc infoWidthMax p)
+    , fmap (List.intercalate "\n" . splitWords infoWidthMax) infoFooter
     ] ++ helpErrors infoHandleError errors
 
 -- | A pretty-printed list of recognized environment variables suitable for usage messages
-helpDoc :: Parser e a -> String
-helpDoc p =
-  List.intercalate "\n" ("Available environment variables:\n" : helpParserDoc p)
+helpDoc :: Int -> Parser e a -> String
+helpDoc widthMax p =
+  List.intercalate "\n" ("Available environment variables:\n" : helpParserDoc widthMax p)
 
-helpParserDoc :: Parser e a -> [String]
-helpParserDoc =
-  concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc v)) . unParser
+helpParserDoc :: Int -> Parser e a -> [String]
+helpParserDoc widthMax =
+  concat . Map.elems . foldAlt (\v -> Map.singleton (varfName v) (helpVarfDoc widthMax v)) . unParser
 
-helpVarfDoc :: VarF e a -> [String]
-helpVarfDoc VarF {varfName, varfHelp, varfHelpDef} =
+helpVarfDoc :: Int -> VarF e a -> [String]
+helpVarfDoc widthMax VarF {varfName, varfHelp, varfHelpDef} =
   case varfHelp of
-    Nothing -> [indent 2 varfName]
+    Nothing -> [indent vo varfName]
     Just h
-      | k > 15    -> indent 2 varfName : map (indent 25) (splitWords 30 t)
+      | k > nameWidthMax ->
+          indent vo varfName : map (indent ho) (splitWords (widthMax - ho) t)
       | otherwise ->
-          case zipWith indent (23 - k : repeat 25) (splitWords 30 t) of
-            (x : xs) -> (indent 2 varfName ++ x) : xs
-            []       -> [indent 2 varfName]
-     where k = length varfName
-           t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
+          case zipWith indent (ho - vo - k : repeat ho) (splitWords (widthMax - ho) t) of
+            (x : xs) -> (indent vo varfName ++ x) : xs
+            []       -> [indent vo varfName]
+     where
+      k = length varfName
+      t = maybe h (\s -> h ++ " (default: " ++ s ++")") varfHelpDef
+ where
+  -- The longest variable name that fits the compact view.
+  nameWidthMax = ho - vo - 1 {- the space between the variable name and the help text -}
+  vo = 2  -- variable name offset
+  ho = 25 -- help text offset
 
 splitWords :: Int -> String -> [String]
 splitWords n =
@@ -87,6 +95,7 @@ data Info e = Info
   , infoDesc        :: Maybe String
   , infoFooter      :: Maybe String
   , infoHandleError :: ErrorHandler e
+  , infoWidthMax    :: Int
   }
 
 -- | Given a variable name and an error value, try to produce a useful error message
@@ -98,6 +107,7 @@ defaultInfo = Info
   , infoDesc = Nothing
   , infoFooter = Nothing
   , infoHandleError = defaultErrorHandler
+  , infoWidthMax = 80
   }
 
 -- | Set the help text header (it usually includes the application's name and version)
@@ -111,6 +121,12 @@ desc h i = i {infoDesc=Just h}
 -- | Set the help text footer (it usually includes examples)
 footer :: String -> Info e -> Info e
 footer h i = i {infoFooter=Just h}
+
+-- | Set the max info width.
+--
+-- /Note:/ It will be set to 26 columns if a smaller value is passed.
+widthMax :: Int -> Info e -> Info e
+widthMax n i = i {infoWidthMax=max 26 n}
 
 -- | An error handler
 handleError :: ErrorHandler e -> Info x -> Info e
