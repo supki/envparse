@@ -1,3 +1,10 @@
+0.5.1
+=====
+
+  * Added configurable maximum info block width (https://github.com/supki/envparse/pull/21).
+
+  * Added `instance (Field e a, ...) => Field e (Maybe a)` for generic environment parsing. (https://github.com/supki/envparse/pull/16)
+
 0.5
 ===
 
