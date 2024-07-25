@@ -14,6 +14,7 @@ module Env.Internal.Parser
   , Var(..)
   , defaultVar
   , Reader
+  , eitherReader
   , str
   , char
   , nonempty
@@ -124,6 +125,12 @@ liftVarF =
 
 -- | An environment variable's value parser. Use @(<=<)@ and @(>=>)@ to combine these
 type Reader e a = String -> Either e a
+
+-- | Create a 'Reader' from a simple parser function
+eitherReader :: Error.AsUnread e => (String -> Either String a) -> Reader e a
+eitherReader f s = left (Error.unread . suffix) $ f s
+ where
+  suffix x = x <> ": " <> show s
 
 -- | Parse a particular variable from the environment
 --

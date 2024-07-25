@@ -59,6 +59,7 @@ module Env
   , var
   , Var
   , Reader
+  , eitherReader
   , str
   , char
   , nonempty
