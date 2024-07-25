@@ -5,6 +5,8 @@
 
   * Added `instance (Field e a, ...) => Field e (Maybe a)` for generic environment parsing. (https://github.com/supki/envparse/pull/16)
 
+  * Added `eitherReader`. (https://github.com/supki/envparse/pull/24)
+
 0.5
 ===
 
