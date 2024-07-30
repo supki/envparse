@@ -128,7 +128,8 @@ type Reader e a = String -> Either e a
 
 -- | Create a 'Reader' from a simple parser function
 eitherReader :: Error.AsUnread e => (String -> Either String a) -> Reader e a
-eitherReader f s = left (Error.unread . suffix) $ f s
+eitherReader f s =
+  left (Error.unread . suffix) (f s)
  where
   suffix x = x <> ": " <> show s
 
