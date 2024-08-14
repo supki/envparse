@@ -1,3 +1,8 @@
+0.6.0
+=====
+
+A PVP-compliant re-release of 0.5.2 with no changes. (I missed a breaking change back in 0.5.1.)
+
 0.5.2
 =====
 
