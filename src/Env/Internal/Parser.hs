@@ -254,8 +254,6 @@ defaultSensitive :: Bool
 defaultSensitive = False
 
 -- | The default value of the variable
---
--- /Note:/ specifying it means the parser won't ever fail.
 def :: a -> Mod Var a
 def d =
   Mod (\v -> v {varDef=Just d})
