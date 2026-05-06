@@ -1,6 +1,5 @@
 envparse
 ========
-[![Build status](https://github.com/supki/envparse/actions/workflows/ci.yml/badge.svg)](https://github.com/supki/envparse/actions/workflows/ci.yml)
 
 [optparse-applicative][0], but for environment variables
 

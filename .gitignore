@@ -1,5 +1,2 @@
-dist/
 .stack-work/
-stack.yaml.lock
-codex.tags
-.gitignore
+.ghci_history

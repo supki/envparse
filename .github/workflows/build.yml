@@ -1,0 +1,59 @@
+name: build
+
+concurrency:
+  # separate concurrency groups for pull requests (.head_ref) and pushes (.ref)
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        resolver:
+          - lts-22.44 # 9.6.7
+          - lts-23.28 # 9.8.4
+          - lts-24.39 # 9.10.3
+        include:
+          - resolver: nightly
+            allow-failure: true
+    continue-on-error: ${{ matrix.allow-failure || false }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: haskell-actions/setup@cd0d9bdd65b20557f41bea4dbe43d0b5fbbfe553 # @v2
+        with:
+          enable-stack: true
+
+      # GHC installation and dependencies should ideally change infrequently,
+      # so we cache them separately from ./.stack-work
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.stack
+          key: ${{ runner.os }}-stack-global-${{ matrix.resolver }}-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-global-${{ matrix.resolver }}-
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .stack-work
+          key: ${{ runner.os }}-stack-work-${{ matrix.resolver }}-${{ hashFiles('stack.yaml.lock', 'package.yaml', 'src/**/*.hs', 'test/**/*.hs', 'driver/**/*.hs') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-work-${{ matrix.resolver }}-
+
+      - run: stack build --resolver ${{ matrix.resolver }} --test --only-dependencies --no-terminal
+
+      - run: stack build --resolver ${{ matrix.resolver }} --test --no-run-tests --no-terminal
+
+      - run: stack test --resolver ${{ matrix.resolver }} --no-terminal
